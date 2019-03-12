@@ -126,7 +126,9 @@ find_package(Sanitizers)
 #
 
 set(LIB_SOURCES
-  "lib/Passes/PassCommandLineOptions.cpp")
+  "lib/Passes/PassCommandLineOptions.cpp"
+  "lib/Transforms/Passes/SymbolicEncapsulationPass.cpp"
+  )
 
 set(LIB_NAME "LLVM${PRJ_NAME}Pass")
 set(OBJ_LIB_NAME "${LIB_NAME}_obj")
