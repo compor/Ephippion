@@ -1,0 +1,6 @@
+#ifndef MODULE_PASS
+#define MODULE_PASS(NAME, CREATE_PASS)
+#endif
+MODULE_PASS("eph-encapsulate", ephippion::SymbolicEncapsulationPass())
+#undef MODULE_PASS
+
