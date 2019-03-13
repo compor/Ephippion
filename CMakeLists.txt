@@ -128,6 +128,7 @@ find_package(Sanitizers)
 set(LIB_SOURCES
   "lib/Passes/PassCommandLineOptions.cpp"
   "lib/Passes/RegisterPasses.cpp"
+  "lib/Transforms/SymbolicEncapsulation.cpp"
   "lib/Transforms/Passes/SymbolicEncapsulationPass.cpp"
   )
 
