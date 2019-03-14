@@ -37,17 +37,22 @@ namespace ephippion {
 class SymbolicEncapsulation {
   llvm::StringRef HarnessNamePrefix;
   llvm::FunctionType *HarnessType;
+  llvm::FunctionType *HeapAllocType;
+  llvm::FunctionType *HeapDeallocType;
+  llvm::Function *HeapAllocFunc;
+  llvm::Function *HeapDeallocFunc;
 
-  llvm::FunctionType *getCapsuleType(llvm::LLVMContext &C) {
+  llvm::FunctionType *getHarnessType(llvm::LLVMContext &C) {
     return llvm::FunctionType::get(
         llvm::Type::getVoidTy(C),
         llvm::ArrayRef<llvm::Type *>{llvm::Type::getVoidTy(C)}, false);
   }
 
-  void setupHarnessArgs(llvm::BasicBlock &SetupBlock,
+  void setupHarnessArgs(llvm::Function::arg_iterator Begin,
+                        llvm::Function::arg_iterator End,
+                        llvm::BasicBlock &SetupBlock,
                         llvm::BasicBlock &TeardownBlock,
-                        llvm::Function::arg_iterator Begin,
-                        llvm::Function::arg_iterator End);
+                        llvm::SmallVectorImpl<llvm::Value *> &Args);
 
 public:
   explicit SymbolicEncapsulation(llvm::StringRef Prefix = "symenc_")
