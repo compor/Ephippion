@@ -4,6 +4,8 @@
 
 #include "Ephippion/Transforms/SymbolicEncapsulation.hpp"
 
+#include "Ephippion/Support/Utils/FuncUtils.hpp"
+
 #include "llvm/IR/Function.h"
 // using llvm::Function
 
@@ -33,10 +35,11 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M,
                              " was not found in module: " + M.getName());
   }
 
+  auto &curCtx = M.getContext();
+
   std::string harnessName = HarnessNamePrefix.str() + F.getName().str();
-  auto *harnessFuncPtr =
-      M.getOrInsertFunction(harnessName, getHarnessType(M.getContext()));
-  auto *harnessFunc = llvm::cast<llvm::Function>(harnessFuncPtr);
+  auto *harnessFunc = DeclareFunc(M, harnessName, llvm::Type::getVoidTy(curCtx),
+                                  {llvm::Type::getVoidTy(curCtx)});
 
   auto *setupBlock =
       llvm::BasicBlock::Create(M.getContext(), "setup", harnessFunc);
@@ -54,8 +57,18 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
     llvm::BasicBlock &SetupBlock, llvm::BasicBlock &TeardownBlock,
     llvm::SmallVectorImpl<llvm::Value *> &Args) {
+  if (Begin != End) {
+    return;
+  }
+
   llvm::IRBuilder<> builder{&SetupBlock};
   llvm::SmallVector<llvm::Instruction *, 16> heapAllocs;
+
+  auto *curMod = Begin->getParent()->getParent();
+  assert(curMod && "Module pointer is empty!");
+
+  auto *heapAllocFunc = DeclareMallocLikeFunc(*curMod, HeapAllocFuncName);
+  auto *heapDeallocFunc = DeclareFreeLikeFunc(*curMod, HeapDeallocFuncName);
 
   for (auto &curArg : llvm::make_range(Begin, End)) {
     if (!curArg.getType()->isPointerTy()) {
@@ -72,7 +85,7 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
       auto *allocSize =
           builder.CreateMul(builder.getInt32(5), builder.getInt32(typeSize));
 
-      heapAllocs.push_back(builder.CreateCall(HeapAllocFunc, allocSize));
+      heapAllocs.push_back(builder.CreateCall(heapAllocFunc, allocSize));
       Args.push_back(heapAllocs.back());
     }
   }
@@ -80,7 +93,7 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
   builder.SetInsertPoint(&TeardownBlock);
   std::reverse(heapAllocs.begin(), heapAllocs.end());
   for (auto *alloc : heapAllocs) {
-    builder.CreateCall(HeapDeallocFunc, alloc);
+    builder.CreateCall(heapDeallocFunc, alloc);
   }
 }
 
