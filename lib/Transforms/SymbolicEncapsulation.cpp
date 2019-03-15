@@ -21,34 +21,52 @@
 #include "llvm/ADT/iterator_range.h"
 // using llvm::make_range
 
+#include "llvm/ADT/SmallVector.h"
+// using llvm::SmallVector
+
 #include "llvm/Support/ErrorHandling.h"
 // using llvm::report_fatal_error
 
 #include <cassert>
 // using assert
 
-bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M,
-                                                   llvm::Function &F) {
-  auto *encapsulatedFunc = M.getFunction(F.getName());
-  if (!encapsulatedFunc) {
-    llvm::report_fatal_error("Function: " + F.getName() +
-                             " was not found in module: " + M.getName());
+bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M) {
+  bool hasChanged = false;
+
+  for (auto &func : M) {
+    hasChanged |= encapsulate(func);
   }
 
-  auto &curCtx = M.getContext();
+  return hasChanged;
+}
+
+bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
+  auto &curM = *F.getParent();
+  auto *encapsulatedFunc = curM.getFunction(F.getName());
+  if (!encapsulatedFunc) {
+    llvm::report_fatal_error("Function: " + F.getName() +
+                             " was not found in module: " + curM.getName());
+  }
+
+  auto &curCtx = curM.getContext();
 
   std::string harnessName = HarnessNamePrefix.str() + F.getName().str();
-  auto *harnessFunc = DeclareFunc(M, harnessName, llvm::Type::getVoidTy(curCtx),
-                                  {llvm::Type::getVoidTy(curCtx)});
+  auto *harnessFunc =
+      DeclareFunc(curM, harnessName, llvm::Type::getVoidTy(curCtx),
+                  {llvm::Type::getVoidTy(curCtx)});
 
   auto *setupBlock =
-      llvm::BasicBlock::Create(M.getContext(), "setup", harnessFunc);
+      llvm::BasicBlock::Create(curM.getContext(), "setup", harnessFunc);
   auto *symbBlock =
-      llvm::BasicBlock::Create(M.getContext(), "symb", harnessFunc);
+      llvm::BasicBlock::Create(curM.getContext(), "symb", harnessFunc);
   auto *callBlock =
-      llvm::BasicBlock::Create(M.getContext(), "call", harnessFunc);
+      llvm::BasicBlock::Create(curM.getContext(), "call", harnessFunc);
   auto *teardownBlock =
-      llvm::BasicBlock::Create(M.getContext(), "teardown", harnessFunc);
+      llvm::BasicBlock::Create(curM.getContext(), "teardown", harnessFunc);
+
+  llvm::SmallVector<llvm::Value *, 8> callArgs;
+  setupHarnessArgs(F.arg_begin(), F.arg_end(), *setupBlock, *teardownBlock,
+                   callArgs);
 
   return true;
 }
@@ -56,7 +74,7 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M,
 void ephippion::SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
     llvm::BasicBlock &SetupBlock, llvm::BasicBlock &TeardownBlock,
-    llvm::SmallVectorImpl<llvm::Value *> &Args) {
+    llvm::SmallVectorImpl<llvm::Value *> &CallArgs) {
   if (Begin != End) {
     return;
   }
@@ -64,15 +82,14 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
   llvm::IRBuilder<> builder{&SetupBlock};
   llvm::SmallVector<llvm::Instruction *, 16> heapAllocs;
 
-  auto *curMod = Begin->getParent()->getParent();
-  assert(curMod && "Module pointer is empty!");
+  auto &curM = *Begin->getParent()->getParent();
 
-  auto *heapAllocFunc = DeclareMallocLikeFunc(*curMod, HeapAllocFuncName);
-  auto *heapDeallocFunc = DeclareFreeLikeFunc(*curMod, HeapDeallocFuncName);
+  auto *heapAllocFunc = DeclareMallocLikeFunc(curM, HeapAllocFuncName);
+  auto *heapDeallocFunc = DeclareFreeLikeFunc(curM, HeapDeallocFuncName);
 
   for (auto &curArg : llvm::make_range(Begin, End)) {
     if (!curArg.getType()->isPointerTy()) {
-      Args.push_back(
+      CallArgs.push_back(
           builder.CreateAlloca(curArg.getType(), 0, curArg.getName()));
     } else {
       // TODO more checking has to take place here for more ptr indirection
@@ -86,7 +103,7 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
           builder.CreateMul(builder.getInt32(5), builder.getInt32(typeSize));
 
       heapAllocs.push_back(builder.CreateCall(heapAllocFunc, allocSize));
-      Args.push_back(heapAllocs.back());
+      CallArgs.push_back(heapAllocs.back());
     }
   }
 

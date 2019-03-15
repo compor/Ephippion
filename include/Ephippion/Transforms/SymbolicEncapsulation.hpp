@@ -18,9 +18,6 @@
 #include "llvm/IR/DerivedTypes.h"
 // using llvm::FunctionType
 
-#include "llvm/ADT/ArrayRef.h"
-// using llvm::ArrayRef
-
 #include "llvm/ADT/StringRef.h"
 // using llvm::StringRef
 
@@ -52,7 +49,8 @@ public:
 
   SymbolicEncapsulation(const SymbolicEncapsulation &) = default;
 
-  bool encapsulate(llvm::Module &M, llvm::Function &F);
+  bool encapsulate(llvm::Module &M);
+  bool encapsulate(llvm::Function &F);
 };
 
 } // namespace ephippion

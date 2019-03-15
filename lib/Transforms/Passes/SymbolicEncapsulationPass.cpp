@@ -10,6 +10,8 @@
 
 #include "Ephippion/Transforms/Passes/SymbolicEncapsulationPass.hpp"
 
+#include "Ephippion/Transforms/SymbolicEncapsulation.hpp"
+
 #include "private/PassCommandLineOptions.hpp"
 
 #include "llvm/Pass.h"
@@ -97,9 +99,10 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
 llvm::PreservedAnalyses
 SymbolicEncapsulationPass::run(llvm::Module &M,
                                llvm::ModuleAnalysisManager &MAM) {
-  run(M);
+  bool hasChanged = run(M);
 
-  return llvm::PreservedAnalyses::all();
+  return hasChanged ? llvm::PreservedAnalyses::all()
+                    : llvm::PreservedAnalyses::none();
 }
 
 // legacy passmanager pass
@@ -110,9 +113,8 @@ void SymbolicEncapsulationLegacyPass::getAnalysisUsage(
 }
 
 bool SymbolicEncapsulationLegacyPass::runOnModule(llvm::Module &M) {
-  SymbolicEncapsulationPass senc;
-
-  return senc.run(M);
+  SymbolicEncapsulationPass pass;
+  return pass.run(M);
 }
 
 } // namespace ephippion
