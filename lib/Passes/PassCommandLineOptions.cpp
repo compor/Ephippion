@@ -20,3 +20,8 @@
 llvm::cl::OptionCategory EphippionCLCategory("Ephipion Pass",
                                              "Options for Ephippion pass");
 
+llvm::cl::list<std::string>
+    FunctionWhiteList("eph-func-wl", llvm::cl::Hidden,
+                      llvm::cl::desc("process only the specified functions"),
+                      llvm::cl::cat(EphippionCLCategory));
+

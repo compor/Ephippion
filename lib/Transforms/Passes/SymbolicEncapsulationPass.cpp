@@ -92,6 +92,20 @@ SymbolicEncapsulationPass::SymbolicEncapsulationPass() {
 
 bool SymbolicEncapsulationPass::run(llvm::Module &M) {
   bool hasChanged = false;
+  SymbolicEncapsulation senc;
+
+  for (auto &func : M) {
+    if (FunctionWhiteList.size()) {
+      auto found = std::find(FunctionWhiteList.begin(), FunctionWhiteList.end(),
+                             std::string{func.getName()});
+
+      if (found == FunctionWhiteList.end()) {
+        continue;
+      }
+    }
+
+    hasChanged |= senc.encapsulate(M);
+  }
 
   return hasChanged;
 }

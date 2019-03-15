@@ -9,3 +9,4 @@
 
 extern llvm::cl::OptionCategory EphippionCLCategory;
 
+extern llvm::cl::list<std::string> FunctionWhiteList;
