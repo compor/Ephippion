@@ -101,7 +101,7 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
     llvm::BasicBlock &SetupBlock, llvm::BasicBlock &TeardownBlock,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs) {
-  if (Begin != End) {
+  if (Begin == End) {
     return;
   }
 
