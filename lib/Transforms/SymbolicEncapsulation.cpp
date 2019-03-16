@@ -74,10 +74,25 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
       llvm::BasicBlock::Create(curM.getContext(), "call", harnessFunc);
   auto *teardownBlock =
       llvm::BasicBlock::Create(curM.getContext(), "teardown", harnessFunc);
+  auto *exitBlock =
+      llvm::BasicBlock::Create(curM.getContext(), "exit", harnessFunc);
 
   llvm::SmallVector<llvm::Value *, 8> callArgs;
   setupHarnessArgs(F.arg_begin(), F.arg_end(), *setupBlock, *teardownBlock,
                    callArgs);
+
+  // setup control flow
+
+  llvm::IRBuilder<> builder{setupBlock};
+  builder.CreateBr(symbBlock);
+  builder.SetInsertPoint(symbBlock);
+  builder.CreateBr(callBlock);
+  builder.SetInsertPoint(callBlock);
+  builder.CreateBr(teardownBlock);
+  builder.SetInsertPoint(teardownBlock);
+  builder.CreateBr(exitBlock);
+  builder.SetInsertPoint(exitBlock);
+  builder.CreateRetVoid();
 
   return true;
 }
