@@ -27,6 +27,12 @@ llvm::Function *ephippion::DeclareFunc(llvm::Module &M, llvm::StringRef Name,
                                     false)));
 }
 
+llvm::Function *ephippion::DeclareFunc(llvm::Module &M, llvm::StringRef Name,
+                                       llvm::Type *RetTy) {
+  return llvm::cast<llvm::Function>(
+      M.getOrInsertFunction(Name, llvm::FunctionType::get(RetTy, false)));
+}
+
 llvm::Function *ephippion::DeclareMallocLikeFunc(llvm::Module &M,
                                                  llvm::StringRef Name) {
   return DeclareFunc(M, Name, llvm::Type::getInt8PtrTy(M.getContext()),

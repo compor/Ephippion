@@ -52,8 +52,7 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
 
   std::string harnessName = HarnessNamePrefix.str() + F.getName().str();
   auto *harnessFunc =
-      DeclareFunc(curM, harnessName, llvm::Type::getVoidTy(curCtx),
-                  {llvm::Type::getVoidTy(curCtx)});
+      DeclareFunc(curM, harnessName, llvm::Type::getVoidTy(curCtx));
 
   auto *setupBlock =
       llvm::BasicBlock::Create(curM.getContext(), "setup", harnessFunc);

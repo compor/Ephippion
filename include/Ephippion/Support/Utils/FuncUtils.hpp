@@ -22,6 +22,9 @@ llvm::Function *DeclareFunc(llvm::Module &M, llvm::StringRef Name,
                             llvm::Type *RetTy,
                             llvm::ArrayRef<llvm::Type *> ArgsTy);
 
+llvm::Function *DeclareFunc(llvm::Module &M, llvm::StringRef Name,
+                            llvm::Type *RetTy);
+
 llvm::Function *DeclareMallocLikeFunc(llvm::Module &M, llvm::StringRef Name);
 
 llvm::Function *DeclareFreeLikeFunc(llvm::Module &M, llvm::StringRef Name);
