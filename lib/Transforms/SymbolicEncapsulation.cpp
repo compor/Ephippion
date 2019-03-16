@@ -27,8 +27,14 @@
 #include "llvm/Support/ErrorHandling.h"
 // using llvm::report_fatal_error
 
+#include "llvm/Support/Debug.h"
+// using DEBUG macro
+// using llvm::dbgs
+
 #include <cassert>
 // using assert
+
+#define DEBUG_TYPE "eph-symenc"
 
 bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M) {
   bool hasChanged = false;
@@ -41,6 +47,12 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M) {
 }
 
 bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
+  if (F.isDeclaration()) {
+    return false;
+  }
+
+  LLVM_DEBUG(llvm::dbgs() << "processing func: " << F.getName() << '\n';);
+
   auto &curM = *F.getParent();
   auto *encapsulatedFunc = curM.getFunction(F.getName());
   if (!encapsulatedFunc) {
