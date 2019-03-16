@@ -104,7 +104,7 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
       }
     }
 
-    hasChanged |= senc.encapsulate(M);
+    hasChanged |= senc.encapsulate(func);
   }
 
   return hasChanged;
