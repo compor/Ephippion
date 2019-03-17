@@ -23,8 +23,7 @@ llvm::Function *ephippion::DeclareFunc(llvm::Module &M, llvm::StringRef Name,
                                        llvm::Type *RetTy,
                                        llvm::ArrayRef<llvm::Type *> ArgsTy) {
   return llvm::cast<llvm::Function>(M.getOrInsertFunction(
-      Name, llvm::FunctionType::get(RetTy, llvm::ArrayRef<llvm::Type *>{ArgsTy},
-                                    false)));
+      Name, llvm::FunctionType::get(RetTy, ArgsTy, false)));
 }
 
 llvm::Function *ephippion::DeclareFunc(llvm::Module &M, llvm::StringRef Name,
@@ -43,5 +42,12 @@ llvm::Function *ephippion::DeclareFreeLikeFunc(llvm::Module &M,
                                                llvm::StringRef Name) {
   return DeclareFunc(M, Name, llvm::Type::getVoidTy(M.getContext()),
                      {llvm::Type::getInt8PtrTy(M.getContext())});
+}
+
+llvm::Function *ephippion::DeclareKLEELikeFunc(llvm::Module &M,
+                                               llvm::StringRef Name) {
+  return llvm::cast<llvm::Function>(M.getOrInsertFunction(
+      Name, llvm::FunctionType::get(llvm::Type::getInt32Ty(M.getContext()), {},
+                                    true)));
 }
 

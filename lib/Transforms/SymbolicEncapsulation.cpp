@@ -81,6 +81,7 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
   setupHarnessArgs(F.arg_begin(), F.arg_end(), *setupBlock, *teardownBlock,
                    callArgs);
 
+  DeclareKLEELikeFunc(curM, "klee_assume");
   // setup control flow
 
   llvm::IRBuilder<> builder{setupBlock};
