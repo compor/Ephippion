@@ -125,9 +125,7 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
           curArg.getType()->getPointerElementType());
       assert(typeSize && "type size cannot be zero!");
 
-      // FIXME this needs to be controlled by cmd line
-      const int maxAllocSize = 5;
-      auto *allocSize = builder.CreateMul(builder.getInt64(maxAllocSize),
+      auto *allocSize = builder.CreateMul(builder.getInt64(AllocElementsNum),
                                           builder.getInt64(typeSize));
 
       heapAllocs.push_back(builder.CreateCall(heapAllocFunc, allocSize));

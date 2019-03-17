@@ -24,6 +24,9 @@
 #include <string>
 // using std::string
 
+#include <cstdint>
+// using uint64_t
+
 namespace llvm {
 class Function;
 class Module;
@@ -35,6 +38,7 @@ class SymbolicEncapsulation {
   llvm::StringRef HarnessNamePrefix;
   llvm::StringRef HeapAllocFuncName;
   llvm::StringRef HeapDeallocFuncName;
+  uint64_t AllocElementsNum;
 
   void setupHarnessArgs(llvm::Function::arg_iterator Begin,
                         llvm::Function::arg_iterator End,
@@ -43,9 +47,10 @@ class SymbolicEncapsulation {
                         llvm::SmallVectorImpl<llvm::Value *> &Args);
 
 public:
-  explicit SymbolicEncapsulation(llvm::StringRef Prefix = "symenc_")
-      : HarnessNamePrefix{Prefix}, HeapAllocFuncName{"malloc"},
-        HeapDeallocFuncName{"free"} {}
+  explicit SymbolicEncapsulation(uint64_t AllocElementsNum,
+                                 llvm::StringRef Prefix = "symenc_")
+      : AllocElementsNum(AllocElementsNum), HarnessNamePrefix{Prefix},
+        HeapAllocFuncName{"malloc"}, HeapDeallocFuncName{"free"} {}
 
   SymbolicEncapsulation(const SymbolicEncapsulation &) = default;
 
