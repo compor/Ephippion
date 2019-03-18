@@ -21,7 +21,7 @@ namespace ephippion {
 llvm::Instruction *
 LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
                           llvm::BasicBlock &Preheader,
-                          llvm::BasicBlock &Postexit) {
+                          llvm::BasicBlock &Postexit, uint64_t Step) {
   assert(Body.size() && "Body blocks is empty!");
 
   auto &curCtx = Body[0]->getParent()->getContext();
@@ -33,8 +33,8 @@ LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
   // add induction variable and loop condition
   llvm::IRBuilder<> builder{hdr};
   auto *ind = builder.CreatePHI(llvm::Type::getInt64Ty(curCtx), 2, "i");
-  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(7)), Body[0],
-                       exit);
+  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(Step)),
+                       Body[0], exit);
 
   // add induction variable step and branch to header
   builder.SetInsertPoint(latch);
