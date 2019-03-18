@@ -129,6 +129,7 @@ set(LIB_SOURCES
   "lib/Passes/PassCommandLineOptions.cpp"
   "lib/Passes/RegisterPasses.cpp"
   "lib/Support/Utils/FuncUtils.cpp"
+  "lib/Support/IR/LoopIRBuilder.cpp"
   "lib/Transforms/SymbolicEncapsulation.cpp"
   "lib/Transforms/Passes/SymbolicEncapsulationPass.cpp"
   )
