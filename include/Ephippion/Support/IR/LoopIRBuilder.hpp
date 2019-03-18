@@ -11,6 +11,7 @@
 
 namespace llvm {
 class BasicBlock;
+class Instruction;
 } // namespace llvm
 
 namespace ephippion {
@@ -19,8 +20,9 @@ class LoopIRBuilder {
 public:
   LoopIRBuilder() = default;
 
-  void CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
-                  llvm::BasicBlock &Preheader);
+  llvm::Instruction *CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
+                                llvm::BasicBlock &Preheader,
+                                llvm::BasicBlock &Postexit);
 };
 
 } // namespace ephippion

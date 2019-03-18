@@ -18,8 +18,10 @@
 
 namespace ephippion {
 
-void LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
-                               llvm::BasicBlock &Preheader) {
+llvm::Instruction *
+LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
+                          llvm::BasicBlock &Preheader,
+                          llvm::BasicBlock &Postexit) {
   assert(Body.size() && "Body blocks is empty!");
 
   auto &curCtx = Body[0]->getParent()->getContext();
@@ -45,10 +47,6 @@ void LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
   ind->setIncomingValue(1, step);
   ind->setIncomingBlock(1, latch);
 
-  // add preheader to header branch
-  builder.SetInsertPoint(&Preheader);
-  builder.CreateBr(hdr);
-
   // direct all unterminated body blocks to loop latch
   for (auto *e : Body) {
     if (!e->getTerminator()) {
@@ -56,6 +54,16 @@ void LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
       builder.CreateBr(latch);
     }
   }
+
+  // add preheader to header branch
+  builder.SetInsertPoint(&Preheader);
+  builder.CreateBr(hdr);
+
+  // add exit to postexit branch
+  builder.SetInsertPoint(exit);
+  builder.CreateBr(&Postexit);
+
+  return ind;
 }
 
 } // namespace ephippion
