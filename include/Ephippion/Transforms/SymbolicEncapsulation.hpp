@@ -6,6 +6,8 @@
 
 #include "Ephippion/Config.hpp"
 
+#include "Ephippion/Support/IR/ArgDirection.hpp"
+
 #include "llvm/IR/LLVMContext.h"
 // using llvm::LLVMContext
 
@@ -17,6 +19,9 @@
 
 #include "llvm/IR/DerivedTypes.h"
 // using llvm::FunctionType
+
+#include "llvm/ADT/ArrayRef.h"
+// using llvm::ArrayRef
 
 #include "llvm/ADT/StringRef.h"
 // using llvm::StringRef
@@ -46,6 +51,9 @@ class SymbolicEncapsulation {
                         llvm::BasicBlock &TeardownBlock,
                         llvm::SmallVectorImpl<llvm::Value *> &Args);
 
+  bool encapsulateImpl(llvm::Function &F,
+                       llvm::ArrayRef<ArgDirection> Directions);
+
 public:
   explicit SymbolicEncapsulation(uint64_t AllocElementsNum,
                                  llvm::StringRef Prefix = "symenc_")
@@ -56,6 +64,7 @@ public:
 
   bool encapsulate(llvm::Module &M);
   bool encapsulate(llvm::Function &F);
+  bool encapsulate(llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions);
 };
 
 } // namespace ephippion

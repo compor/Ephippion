@@ -47,6 +47,19 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M) {
 }
 
 bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
+  return encapsulateImpl(F, {});
+}
+
+bool ephippion::SymbolicEncapsulation::encapsulate(
+    llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions) {
+  assert(F.arg_size() == Directions.size() &&
+         "Missing direction information for function arguments!");
+
+  return encapsulateImpl(F, Directions);
+}
+
+bool ephippion::SymbolicEncapsulation::encapsulateImpl(
+    llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions) {
   if (F.isDeclaration()) {
     return false;
   }
@@ -81,7 +94,7 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
   setupHarnessArgs(F.arg_begin(), F.arg_end(), *setupBlock, *teardownBlock,
                    callArgs);
 
-  //DeclareKLEELikeFunc(curM, "klee_assume");
+  // DeclareKLEELikeFunc(curM, "klee_assume");
   // setup control flow
 
   llvm::IRBuilder<> builder{setupBlock};
