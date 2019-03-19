@@ -23,6 +23,9 @@
 #include "llvm/ADT/ArrayRef.h"
 // using llvm::ArrayRef
 
+#include "llvm/ADT/SmallVector.h"
+// using llvm::SmallVector
+
 #include "llvm/ADT/StringRef.h"
 // using llvm::StringRef
 
@@ -33,7 +36,6 @@
 // using uint64_t
 
 namespace llvm {
-class Function;
 class Module;
 } // namespace llvm
 

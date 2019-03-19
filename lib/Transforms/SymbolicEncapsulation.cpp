@@ -21,9 +21,6 @@
 #include "llvm/ADT/iterator_range.h"
 // using llvm::make_range
 
-#include "llvm/ADT/SmallVector.h"
-// using llvm::SmallVector
-
 #include "llvm/Support/ErrorHandling.h"
 // using llvm::report_fatal_error
 
