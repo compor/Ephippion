@@ -49,9 +49,11 @@ class SymbolicEncapsulation {
 
   void setupHarnessArgs(llvm::Function::arg_iterator Begin,
                         llvm::Function::arg_iterator End,
+                        llvm::ArrayRef<ArgDirection> Directions,
                         llvm::BasicBlock &SetupBlock,
                         llvm::BasicBlock &TeardownBlock,
-                        llvm::SmallVectorImpl<llvm::Value *> &Args);
+                        llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
+                        llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
   bool encapsulateImpl(llvm::Function &F,
                        llvm::ArrayRef<ArgDirection> Directions);

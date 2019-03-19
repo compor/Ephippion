@@ -87,9 +87,9 @@ bool ephippion::SymbolicEncapsulation::encapsulateImpl(
   auto *exitBlock =
       llvm::BasicBlock::Create(curM.getContext(), "exit", harnessFunc);
 
-  llvm::SmallVector<llvm::Value *, 8> callArgs;
-  setupHarnessArgs(F.arg_begin(), F.arg_end(), *setupBlock, *teardownBlock,
-                   callArgs);
+  llvm::SmallVector<llvm::Value *, 8> callArgs1, callArgs2;
+  setupHarnessArgs(F.arg_begin(), F.arg_end(), Directions, *setupBlock,
+                   *teardownBlock, callArgs1, callArgs2);
 
   // DeclareKLEELikeFunc(curM, "klee_assume");
   // setup control flow
@@ -110,8 +110,10 @@ bool ephippion::SymbolicEncapsulation::encapsulateImpl(
 
 void ephippion::SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
-    llvm::BasicBlock &SetupBlock, llvm::BasicBlock &TeardownBlock,
-    llvm::SmallVectorImpl<llvm::Value *> &CallArgs) {
+    llvm::ArrayRef<ArgDirection> Directions, llvm::BasicBlock &SetupBlock,
+    llvm::BasicBlock &TeardownBlock,
+    llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
+    llvm::SmallVectorImpl<llvm::Value *> &CallArgs2) {
   if (Begin == End) {
     return;
   }
@@ -124,10 +126,22 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
   auto *heapAllocFunc = DeclareMallocLikeFunc(curM, HeapAllocFuncName);
   auto *heapDeallocFunc = DeclareFreeLikeFunc(curM, HeapDeallocFuncName);
 
+  size_t argIdx = 0;
   for (auto &curArg : llvm::make_range(Begin, End)) {
+    ArgDirection dir = AD_Inbound;
+    if (Directions.size() && argIdx < Directions.size()) {
+      dir = Directions[argIdx];
+    }
+
     if (!curArg.getType()->isPointerTy()) {
-      CallArgs.push_back(
-          builder.CreateAlloca(curArg.getType(), 0, curArg.getName()));
+      auto *arg1 = builder.CreateAlloca(curArg.getType(), 0, curArg.getName());
+      CallArgs1.push_back(arg1);
+
+      decltype(auto) arg2 = arg1;
+      if (isOutbound(dir)) {
+        arg2 = builder.CreateAlloca(curArg.getType(), 0, curArg.getName());
+      }
+      CallArgs2.push_back(arg2);
     } else {
       // TODO more checking has to take place here for more ptr indirection
 
@@ -139,9 +153,19 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
       auto *allocSize = builder.CreateMul(builder.getInt64(AllocElementsNum),
                                           builder.getInt64(typeSize));
 
-      heapAllocs.push_back(builder.CreateCall(heapAllocFunc, allocSize));
-      CallArgs.push_back(heapAllocs.back());
+      auto *arg1 = builder.CreateCall(heapAllocFunc, allocSize);
+      heapAllocs.push_back(arg1);
+      CallArgs1.push_back(arg1);
+
+      decltype(auto) arg2 = arg1;
+      if (isOutbound(dir)) {
+        auto *arg2 = builder.CreateCall(heapAllocFunc, allocSize);
+        heapAllocs.push_back(arg2);
+      }
+      CallArgs2.push_back(arg2);
     }
+
+    ++argIdx;
   }
 
   builder.SetInsertPoint(&TeardownBlock);
