@@ -33,12 +33,12 @@ LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
   // add induction variable and loop condition
   llvm::IRBuilder<> builder{hdr};
   auto *ind = builder.CreatePHI(llvm::Type::getInt64Ty(curCtx), 2, "i");
-  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(Step)),
+  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(10)),
                        Body[0], exit);
 
   // add induction variable step and branch to header
   builder.SetInsertPoint(latch);
-  auto *step = builder.CreateAdd(ind, builder.getInt64(1));
+  auto *step = builder.CreateAdd(ind, builder.getInt64(Step));
   builder.CreateBr(hdr);
 
   // add induction phi inputs
