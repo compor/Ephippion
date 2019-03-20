@@ -22,6 +22,7 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
     llvm::ArrayRef<llvm::BasicBlock *> Body, llvm::BasicBlock &Preheader,
     llvm::BasicBlock &Postexit, uint64_t Start, uint64_t End, uint64_t Step) {
   assert(Body.size() && "Body blocks is empty!");
+  assert(Start != End && "Loop bounds are equal!");
 
   auto &curCtx = Body[0]->getParent()->getContext();
 
