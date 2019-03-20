@@ -24,6 +24,16 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
   assert(Body.size() && "Body blocks is empty!");
   assert(Start != End && "Loop bounds are equal!");
 
+  enum LoopDirection : uint8_t {
+    LD_Increasing,
+    LD_Decreasing,
+  };
+
+  LoopDirection direction = LD_Increasing;
+  if (Start > End) {
+    LoopDirection direction = LD_Decreasing;
+  }
+
   auto &curCtx = Body[0]->getParent()->getContext();
 
   auto *hdr = llvm::BasicBlock::Create(curCtx, "hdr");
@@ -33,12 +43,30 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
   // add induction variable and loop condition
   llvm::IRBuilder<> builder{hdr};
   auto *ind = builder.CreatePHI(llvm::Type::getInt64Ty(curCtx), 2, "i");
-  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(End)),
-                       Body[0], exit);
+
+  switch (direction) {
+  default:
+    builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(End)),
+                         Body[0], exit);
+    break;
+  case LD_Decreasing:
+    builder.CreateCondBr(builder.CreateICmpUGT(ind, builder.getInt64(End)),
+                         Body[0], exit);
+    break;
+  }
 
   // add induction variable step and branch to header
   builder.SetInsertPoint(latch);
-  auto *step = builder.CreateAdd(ind, builder.getInt64(Step));
+  llvm::Value *step = nullptr;
+  switch (direction) {
+  default:
+    step = builder.CreateAdd(ind, builder.getInt64(Step));
+    break;
+  case LD_Decreasing:
+    step = builder.CreateSub(ind, builder.getInt64(Step));
+    break;
+  }
+
   builder.CreateBr(hdr);
 
   // add induction phi inputs
