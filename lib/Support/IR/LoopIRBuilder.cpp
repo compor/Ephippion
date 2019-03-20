@@ -18,10 +18,9 @@
 
 namespace ephippion {
 
-llvm::Instruction *
-LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
-                          llvm::BasicBlock &Preheader,
-                          llvm::BasicBlock &Postexit, uint64_t Step) {
+llvm::Instruction *LoopIRBuilder::CreateLoop(
+    llvm::ArrayRef<llvm::BasicBlock *> Body, llvm::BasicBlock &Preheader,
+    llvm::BasicBlock &Postexit, uint64_t Start, uint64_t End, uint64_t Step) {
   assert(Body.size() && "Body blocks is empty!");
 
   auto &curCtx = Body[0]->getParent()->getContext();
@@ -33,7 +32,7 @@ LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
   // add induction variable and loop condition
   llvm::IRBuilder<> builder{hdr};
   auto *ind = builder.CreatePHI(llvm::Type::getInt64Ty(curCtx), 2, "i");
-  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(10)),
+  builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(End)),
                        Body[0], exit);
 
   // add induction variable step and branch to header
@@ -42,7 +41,7 @@ LoopIRBuilder::CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
   builder.CreateBr(hdr);
 
   // add induction phi inputs
-  ind->setIncomingValue(0, builder.getInt64(0));
+  ind->setIncomingValue(0, builder.getInt64(Start));
   ind->setIncomingBlock(0, &Preheader);
   ind->setIncomingValue(1, step);
   ind->setIncomingBlock(1, latch);

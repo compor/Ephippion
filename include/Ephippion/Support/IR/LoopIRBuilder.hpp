@@ -21,11 +21,10 @@ namespace ephippion {
 
 class LoopIRBuilder {
 public:
-  LoopIRBuilder() = default;
-
   llvm::Instruction *CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
                                 llvm::BasicBlock &Preheader,
-                                llvm::BasicBlock &Postexit, uint64_t Step = 1);
+                                llvm::BasicBlock &Postexit, uint64_t Start = 0,
+                                uint64_t End = 10, uint64_t Step = 1);
 };
 
 } // namespace ephippion
