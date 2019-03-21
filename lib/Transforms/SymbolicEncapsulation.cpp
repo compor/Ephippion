@@ -78,10 +78,12 @@ bool ephippion::SymbolicEncapsulation::encapsulateImpl(
 
   auto *setupBlock =
       llvm::BasicBlock::Create(curM.getContext(), "setup", harnessFunc);
-  auto *symbBlock =
-      llvm::BasicBlock::Create(curM.getContext(), "symb", harnessFunc);
+  auto *seSetupBlock =
+      llvm::BasicBlock::Create(curM.getContext(), "se.setup", harnessFunc);
   auto *callBlock =
       llvm::BasicBlock::Create(curM.getContext(), "call", harnessFunc);
+  auto *seTeardownBlock =
+      llvm::BasicBlock::Create(curM.getContext(), "se.teardown", harnessFunc);
   auto *teardownBlock =
       llvm::BasicBlock::Create(curM.getContext(), "teardown", harnessFunc);
   auto *exitBlock =
@@ -94,14 +96,20 @@ bool ephippion::SymbolicEncapsulation::encapsulateImpl(
   // DeclareKLEELikeFunc(curM, "klee_assume");
   // setup control flow
 
-  llvm::IRBuilder<> builder{setupBlock};
-  builder.CreateBr(symbBlock);
-  builder.SetInsertPoint(symbBlock);
+  llvm::IRBuilder<> builder{curCtx};
+
+  builder.SetInsertPoint(setupBlock);
+  builder.CreateBr(seSetupBlock);
+  builder.SetInsertPoint(seSetupBlock);
   builder.CreateBr(callBlock);
   builder.SetInsertPoint(callBlock);
+  builder.CreateBr(seTeardownBlock);
+  builder.SetInsertPoint(seTeardownBlock);
   builder.CreateBr(teardownBlock);
   builder.SetInsertPoint(teardownBlock);
   builder.CreateBr(exitBlock);
+
+  // set harness return
   builder.SetInsertPoint(exitBlock);
   builder.CreateRetVoid();
 
