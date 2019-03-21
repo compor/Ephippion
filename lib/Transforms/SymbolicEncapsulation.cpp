@@ -33,7 +33,9 @@
 
 #define DEBUG_TYPE "eph-symenc"
 
-bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M) {
+namespace ephippion {
+
+bool SymbolicEncapsulation::encapsulate(llvm::Module &M) {
   bool hasChanged = false;
 
   for (auto &func : M) {
@@ -43,11 +45,11 @@ bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Module &M) {
   return hasChanged;
 }
 
-bool ephippion::SymbolicEncapsulation::encapsulate(llvm::Function &F) {
+bool SymbolicEncapsulation::encapsulate(llvm::Function &F) {
   return encapsulateImpl(F, {});
 }
 
-bool ephippion::SymbolicEncapsulation::encapsulate(
+bool SymbolicEncapsulation::encapsulate(
     llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions) {
   assert(F.arg_size() == Directions.size() &&
          "Missing direction information for function arguments!");
@@ -55,7 +57,7 @@ bool ephippion::SymbolicEncapsulation::encapsulate(
   return encapsulateImpl(F, Directions);
 }
 
-bool ephippion::SymbolicEncapsulation::encapsulateImpl(
+bool SymbolicEncapsulation::encapsulateImpl(
     llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions) {
   if (F.isDeclaration()) {
     return false;
@@ -93,7 +95,8 @@ bool ephippion::SymbolicEncapsulation::encapsulateImpl(
   setupHarnessArgs(F.arg_begin(), F.arg_end(), Directions, *setupBlock,
                    *teardownBlock, callArgs1, callArgs2);
 
-  // DeclareKLEELikeFunc(curM, "klee_assume");
+  addSEAssertions(*seSetupBlock, callArgs1, callArgs2, Directions);
+
   // setup control flow
 
   llvm::IRBuilder<> builder{curCtx};
@@ -116,7 +119,7 @@ bool ephippion::SymbolicEncapsulation::encapsulateImpl(
   return true;
 }
 
-void ephippion::SymbolicEncapsulation::setupHarnessArgs(
+void SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
     llvm::ArrayRef<ArgDirection> Directions, llvm::BasicBlock &SetupBlock,
     llvm::BasicBlock &TeardownBlock,
@@ -182,4 +185,39 @@ void ephippion::SymbolicEncapsulation::setupHarnessArgs(
     builder.CreateCall(heapDeallocFunc, alloc);
   }
 }
+
+void SymbolicEncapsulation::addSEAssertions(
+    llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
+    llvm::SmallVectorImpl<llvm::Value *> &Values2,
+    llvm::ArrayRef<ArgDirection> Directions) {
+  assert(Values1.size() && Values2.size() && "Value sets are empty!");
+  assert(Values1.size() == Values2.size() && "Value set sizes differ!");
+
+  auto &curM = *Block.getParent()->getParent();
+
+  auto *assertFunc = DeclareKLEELikeFunc(curM, "klee_assert");
+
+  llvm::IRBuilder<> builder{&Block};
+
+  for (size_t i = 0; i < Values1.size(); ++i) {
+    if (!isOutbound(Directions[i])) {
+      continue;
+    }
+
+    if (!Values1[i]->getType()->isPointerTy()) {
+      auto *cond = builder.CreateICmpEQ(Values1[i], Values2[i]);
+      builder.CreateCall(assertFunc, cond);
+    } else {
+      // TODO indexing should be modified depending the values iterator
+      // dependence
+      auto *val1 = builder.CreateInBoundsGEP(Values1[i], {builder.getInt64(0)});
+      auto *val2 = builder.CreateInBoundsGEP(Values2[i], {builder.getInt64(0)});
+
+      auto *cond = builder.CreateICmpEQ(val1, val2);
+      builder.CreateCall(assertFunc, cond);
+    }
+  }
+}
+
+} // namespace ephippion
 

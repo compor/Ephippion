@@ -24,7 +24,7 @@
 // using llvm::ArrayRef
 
 #include "llvm/ADT/SmallVector.h"
-// using llvm::SmallVector
+// using llvm::SmallVectorImpl
 
 #include "llvm/ADT/StringRef.h"
 // using llvm::StringRef
@@ -54,6 +54,11 @@ class SymbolicEncapsulation {
                         llvm::BasicBlock &TeardownBlock,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
+
+  void addSEAssertions(llvm::BasicBlock &Block,
+                       llvm::SmallVectorImpl<llvm::Value *> &Values1,
+                       llvm::SmallVectorImpl<llvm::Value *> &Values2,
+                       llvm::ArrayRef<ArgDirection> Directions);
 
   bool encapsulateImpl(llvm::Function &F,
                        llvm::ArrayRef<ArgDirection> Directions);
