@@ -170,7 +170,7 @@ void SymbolicEncapsulation::setupHarnessArgs(
 
       decltype(auto) arg2 = arg1;
       if (isOutbound(dir)) {
-        auto *arg2 = builder.CreateCall(heapAllocFunc, allocSize);
+        arg2 = builder.CreateCall(heapAllocFunc, allocSize);
         heapAllocs.push_back(arg2);
       }
       CallArgs2.push_back(arg2);
