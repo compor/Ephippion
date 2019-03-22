@@ -54,8 +54,9 @@ bool SymbolicEncapsulation::encapsulate(llvm::Function &F) {
 
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
                                         llvm::ArrayRef<ArgSpec> ArgSpecs) {
-  assert(F.arg_size() == ArgSpecs.size() &&
-         "Missing direction information for function arguments!");
+  // either argspec information must match func args or be empty
+  assert((ArgSpecs.size() == 0 || F.arg_size() == ArgSpecs.size()) &&
+         "Missing argspec information for function arguments!");
 
   return encapsulateImpl(F, ArgSpecs);
 }
@@ -208,7 +209,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
   llvm::IRBuilder<> builder{&Block};
 
   for (size_t i = 0; i < Values.size(); ++i) {
-    if (isOnlyOutbound(ArgSpecs[i].Direction)) {
+    if (ArgSpecs.size() && isOnlyOutbound(ArgSpecs[i].Direction)) {
       continue;
     }
 
@@ -246,7 +247,7 @@ void SymbolicEncapsulation::createSymbolicAssertions(
   llvm::IRBuilder<> builder{&Block};
 
   for (size_t i = 0; i < Values1.size(); ++i) {
-    if (!isOutbound(ArgSpecs[i].Direction)) {
+    if (ArgSpecs.size() && !isOutbound(ArgSpecs[i].Direction)) {
       continue;
     }
 
