@@ -55,6 +55,10 @@ class SymbolicEncapsulation {
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
+  void createSymbolicDeclarations(llvm::BasicBlock &Block,
+                                  llvm::SmallVectorImpl<llvm::Value *> &Values,
+                                  llvm::ArrayRef<ArgDirection> Directions);
+
   void addSEAssertions(llvm::BasicBlock &Block,
                        llvm::SmallVectorImpl<llvm::Value *> &Values1,
                        llvm::SmallVectorImpl<llvm::Value *> &Values2,

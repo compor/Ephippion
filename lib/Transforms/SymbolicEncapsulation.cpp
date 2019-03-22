@@ -28,6 +28,9 @@
 // using DEBUG macro
 // using llvm::dbgs
 
+#include <cstring>
+// using std::to_string
+
 #include <cassert>
 // using assert
 
@@ -95,6 +98,7 @@ bool SymbolicEncapsulation::encapsulateImpl(
   setupHarnessArgs(F.arg_begin(), F.arg_end(), Directions, *setupBlock,
                    *teardownBlock, callArgs1, callArgs2);
 
+  createSymbolicDeclarations(*seSetupBlock, callArgs1, Directions);
   addSEAssertions(*seSetupBlock, callArgs1, callArgs2, Directions);
 
   // setup control flow
@@ -185,6 +189,46 @@ void SymbolicEncapsulation::setupHarnessArgs(
     builder.CreateCall(heapDeallocFunc, alloc);
   }
 }
+
+void SymbolicEncapsulation::createSymbolicDeclarations(
+    llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values,
+    llvm::ArrayRef<ArgDirection> Directions) {
+  assert(Values.size() && "Value set is empty!");
+
+  auto &curM = *Block.getParent()->getParent();
+  auto &dataLayout = curM.getDataLayout();
+
+  auto *symbolizeFunc = DeclareKLEELikeFunc(curM, "klee_make_symbolic");
+
+  llvm::IRBuilder<> builder{&Block};
+
+  for (size_t i = 0; i < Values.size(); ++i) {
+    if (isOnlyOutbound(Directions[i])) {
+      continue;
+    }
+
+    if (!Values[i]->getType()->isPointerTy()) {
+      // TODO
+    } else {
+      // TODO indexing should be modified depending the values iterator
+      // dependence
+      // auto *val = builder.CreateInBoundsGEP(Values[i],
+      // {builder.getInt64(0)});
+
+      size_t typeSize = dataLayout.getTypeAllocSize(
+          Values[i]->getType()->getPointerElementType());
+      // TODO this allocation size needs to change
+      auto *allocSize =
+          builder.CreateMul(builder.getInt64(1), builder.getInt64(typeSize));
+
+      std::string symName =
+          "sym." + Values[i]->getName().str() + "." + std::to_string(i);
+      builder.CreateCall(
+          symbolizeFunc,
+          {Values[i], allocSize, builder.CreateGlobalStringPtr(symName)});
+    }
+  }
+} // namespace ephippion
 
 void SymbolicEncapsulation::addSEAssertions(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
