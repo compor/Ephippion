@@ -2,8 +2,6 @@
 //
 //
 
-#include "Ephippion/Config.hpp"
-
 #include "private/PassCommandLineOptions.hpp"
 
 #include "llvm/Support/CommandLine.h"
@@ -29,4 +27,9 @@ llvm::cl::list<std::string>
     FunctionWhiteList("eph-func-wl", llvm::cl::Hidden,
                       llvm::cl::desc("process only the specified functions"),
                       llvm::cl::cat(EphippionCLCategory));
+
+llvm::cl::list<ephippion::ArgSpec>
+    ArgSpecs("eph-argspec", llvm::cl::Hidden,
+             llvm::cl::desc("use this argspec to process function arguments"),
+             llvm::cl::cat(EphippionCLCategory));
 
