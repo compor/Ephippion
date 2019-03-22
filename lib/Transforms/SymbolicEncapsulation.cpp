@@ -99,7 +99,7 @@ bool SymbolicEncapsulation::encapsulateImpl(
                    *teardownBlock, callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, callArgs1, Directions);
-  addSEAssertions(*seTeardownBlock, callArgs1, callArgs2, Directions);
+  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, Directions);
 
   // setup control flow
 
@@ -230,7 +230,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
   }
 } // namespace ephippion
 
-void SymbolicEncapsulation::addSEAssertions(
+void SymbolicEncapsulation::createSymbolicAssertions(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
     llvm::SmallVectorImpl<llvm::Value *> &Values2,
     llvm::ArrayRef<ArgDirection> Directions) {
