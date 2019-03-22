@@ -38,30 +38,34 @@
 
 namespace ephippion {
 
-bool SymbolicEncapsulation::encapsulate(llvm::Module &M) {
+bool SymbolicEncapsulation::encapsulate(llvm::Module &M,
+                                        uint64_t IterationsNum) {
   bool hasChanged = false;
 
   for (auto &func : M) {
-    hasChanged |= encapsulate(func);
+    hasChanged |= encapsulate(func, IterationsNum);
   }
 
   return hasChanged;
 }
 
-bool SymbolicEncapsulation::encapsulate(llvm::Function &F) {
-  return encapsulateImpl(F, {});
+bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
+                                        uint64_t IterationsNum) {
+  return encapsulateImpl(F, IterationsNum, {});
 }
 
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
+                                        uint64_t IterationsNum,
                                         llvm::ArrayRef<ArgSpec> ArgSpecs) {
   // either argspec information must match func args or be empty
   assert((ArgSpecs.size() == 0 || F.arg_size() == ArgSpecs.size()) &&
          "Missing argspec information for function arguments!");
 
-  return encapsulateImpl(F, ArgSpecs);
+  return encapsulateImpl(F, IterationsNum, ArgSpecs);
 }
 
 bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
+                                            uint64_t IterationsNum,
                                             llvm::ArrayRef<ArgSpec> ArgSpecs) {
   if (F.isDeclaration()) {
     return false;

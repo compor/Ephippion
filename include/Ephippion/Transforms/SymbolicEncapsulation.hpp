@@ -68,7 +68,8 @@ class SymbolicEncapsulation {
   void createCall(llvm::BasicBlock &Block, llvm::Function &Func,
                   llvm::SmallVectorImpl<llvm::Value *> &Args);
 
-  bool encapsulateImpl(llvm::Function &F, llvm::ArrayRef<ArgSpec> ArgSpecs);
+  bool encapsulateImpl(llvm::Function &F, uint64_t IterationsNum,
+                       llvm::ArrayRef<ArgSpec> ArgSpecs);
 
 public:
   explicit SymbolicEncapsulation(uint64_t AllocElementsNum,
@@ -78,9 +79,10 @@ public:
 
   SymbolicEncapsulation(const SymbolicEncapsulation &) = default;
 
-  bool encapsulate(llvm::Module &M);
-  bool encapsulate(llvm::Function &F);
-  bool encapsulate(llvm::Function &F, llvm::ArrayRef<ArgSpec> ArgSpecs);
+  bool encapsulate(llvm::Module &M, uint64_t IterationsNum);
+  bool encapsulate(llvm::Function &F, uint64_t IterationsNum);
+  bool encapsulate(llvm::Function &F, uint64_t IterationsNum,
+                   llvm::ArrayRef<ArgSpec> ArgSpecs);
 };
 
 } // namespace ephippion
