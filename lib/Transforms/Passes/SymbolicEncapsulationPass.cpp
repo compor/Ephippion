@@ -8,6 +8,8 @@
 
 #include "Ephippion/Debug.hpp"
 
+#include "Ephippion/Support/IR/ArgSpec.hpp"
+
 #include "Ephippion/Transforms/Passes/SymbolicEncapsulationPass.hpp"
 
 #include "Ephippion/Transforms/SymbolicEncapsulation.hpp"
@@ -104,7 +106,7 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
       }
     }
 
-    hasChanged |= senc.encapsulate(func);
+    hasChanged |= senc.encapsulate(func, ArgSpecs);
   }
 
   return hasChanged;

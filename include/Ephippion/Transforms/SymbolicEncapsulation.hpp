@@ -6,7 +6,7 @@
 
 #include "Ephippion/Config.hpp"
 
-#include "Ephippion/Support/IR/ArgDirection.hpp"
+#include "Ephippion/Support/IR/ArgSpec.hpp"
 
 #include "llvm/IR/LLVMContext.h"
 // using llvm::LLVMContext
@@ -50,7 +50,7 @@ class SymbolicEncapsulation {
 
   void setupHarnessArgs(llvm::Function::arg_iterator Begin,
                         llvm::Function::arg_iterator End,
-                        llvm::ArrayRef<ArgDirection> Directions,
+                        llvm::ArrayRef<ArgSpec> ArgSpecs,
                         llvm::BasicBlock &SetupBlock,
                         llvm::BasicBlock &TeardownBlock,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
@@ -58,18 +58,17 @@ class SymbolicEncapsulation {
 
   void createSymbolicDeclarations(llvm::BasicBlock &Block,
                                   llvm::SmallVectorImpl<llvm::Value *> &Values,
-                                  llvm::ArrayRef<ArgDirection> Directions);
+                                  llvm::ArrayRef<ArgSpec> ArgSpecs);
 
   void createSymbolicAssertions(llvm::BasicBlock &Block,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values1,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values2,
-                                llvm::ArrayRef<ArgDirection> Directions);
+                                llvm::ArrayRef<ArgSpec> ArgSpecs);
 
   void createCall(llvm::BasicBlock &Block, llvm::Function &Func,
                   llvm::SmallVectorImpl<llvm::Value *> &Args);
 
-  bool encapsulateImpl(llvm::Function &F,
-                       llvm::ArrayRef<ArgDirection> Directions);
+  bool encapsulateImpl(llvm::Function &F, llvm::ArrayRef<ArgSpec> ArgSpecs);
 
 public:
   explicit SymbolicEncapsulation(uint64_t AllocElementsNum,
@@ -81,7 +80,7 @@ public:
 
   bool encapsulate(llvm::Module &M);
   bool encapsulate(llvm::Function &F);
-  bool encapsulate(llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions);
+  bool encapsulate(llvm::Function &F, llvm::ArrayRef<ArgSpec> ArgSpecs);
 };
 
 } // namespace ephippion

@@ -52,16 +52,16 @@ bool SymbolicEncapsulation::encapsulate(llvm::Function &F) {
   return encapsulateImpl(F, {});
 }
 
-bool SymbolicEncapsulation::encapsulate(
-    llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions) {
-  assert(F.arg_size() == Directions.size() &&
+bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
+                                        llvm::ArrayRef<ArgSpec> ArgSpecs) {
+  assert(F.arg_size() == ArgSpecs.size() &&
          "Missing direction information for function arguments!");
 
-  return encapsulateImpl(F, Directions);
+  return encapsulateImpl(F, ArgSpecs);
 }
 
-bool SymbolicEncapsulation::encapsulateImpl(
-    llvm::Function &F, llvm::ArrayRef<ArgDirection> Directions) {
+bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
+                                            llvm::ArrayRef<ArgSpec> ArgSpecs) {
   if (F.isDeclaration()) {
     return false;
   }
@@ -95,11 +95,11 @@ bool SymbolicEncapsulation::encapsulateImpl(
       llvm::BasicBlock::Create(curM.getContext(), "exit", harnessFunc);
 
   llvm::SmallVector<llvm::Value *, 8> callArgs1, callArgs2;
-  setupHarnessArgs(F.arg_begin(), F.arg_end(), Directions, *setupBlock,
+  setupHarnessArgs(F.arg_begin(), F.arg_end(), ArgSpecs, *setupBlock,
                    *teardownBlock, callArgs1, callArgs2);
 
-  createSymbolicDeclarations(*seSetupBlock, callArgs1, Directions);
-  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, Directions);
+  createSymbolicDeclarations(*seSetupBlock, callArgs1, ArgSpecs);
+  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, ArgSpecs);
 
   llvm::IRBuilder<> builder{curCtx};
 
@@ -130,7 +130,7 @@ bool SymbolicEncapsulation::encapsulateImpl(
 
 void SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
-    llvm::ArrayRef<ArgDirection> Directions, llvm::BasicBlock &SetupBlock,
+    llvm::ArrayRef<ArgSpec> ArgSpecs, llvm::BasicBlock &SetupBlock,
     llvm::BasicBlock &TeardownBlock,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs2) {
@@ -149,8 +149,8 @@ void SymbolicEncapsulation::setupHarnessArgs(
   size_t argIdx = 0;
   for (auto &curArg : llvm::make_range(Begin, End)) {
     ArgDirection dir = AD_Inbound;
-    if (Directions.size() && argIdx < Directions.size()) {
-      dir = Directions[argIdx];
+    if (ArgSpecs.size() && argIdx < ArgSpecs.size()) {
+      dir = ArgSpecs[argIdx].Direction;
     }
 
     if (!curArg.getType()->isPointerTy()) {
@@ -197,7 +197,7 @@ void SymbolicEncapsulation::setupHarnessArgs(
 
 void SymbolicEncapsulation::createSymbolicDeclarations(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values,
-    llvm::ArrayRef<ArgDirection> Directions) {
+    llvm::ArrayRef<ArgSpec> ArgSpecs) {
   assert(Values.size() && "Value set is empty!");
 
   auto &curM = *Block.getParent()->getParent();
@@ -208,7 +208,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
   llvm::IRBuilder<> builder{&Block};
 
   for (size_t i = 0; i < Values.size(); ++i) {
-    if (isOnlyOutbound(Directions[i])) {
+    if (isOnlyOutbound(ArgSpecs[i].Direction)) {
       continue;
     }
 
@@ -235,7 +235,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
 void SymbolicEncapsulation::createSymbolicAssertions(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
     llvm::SmallVectorImpl<llvm::Value *> &Values2,
-    llvm::ArrayRef<ArgDirection> Directions) {
+    llvm::ArrayRef<ArgSpec> ArgSpecs) {
   assert(Values1.size() && Values2.size() && "Value sets are empty!");
   assert(Values1.size() == Values2.size() && "Value set sizes differ!");
 
@@ -246,7 +246,7 @@ void SymbolicEncapsulation::createSymbolicAssertions(
   llvm::IRBuilder<> builder{&Block};
 
   for (size_t i = 0; i < Values1.size(); ++i) {
-    if (!isOutbound(Directions[i])) {
+    if (!isOutbound(ArgSpecs[i].Direction)) {
       continue;
     }
 
