@@ -222,7 +222,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
           builder.CreateMul(builder.getInt64(1), builder.getInt64(typeSize));
 
       std::string symName =
-          "sym." + Values[i]->getName().str() + "." + std::to_string(i);
+          "sym.in." + Values[i]->getName().str() + std::to_string(i);
       builder.CreateCall(
           symbolizeFunc,
           {Values[i], allocSize, builder.CreateGlobalStringPtr(symName)});
