@@ -99,7 +99,7 @@ bool SymbolicEncapsulation::encapsulateImpl(
                    *teardownBlock, callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, callArgs1, Directions);
-  addSEAssertions(*seSetupBlock, callArgs1, callArgs2, Directions);
+  addSEAssertions(*seTeardownBlock, callArgs1, callArgs2, Directions);
 
   // setup control flow
 
