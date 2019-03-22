@@ -85,8 +85,8 @@ bool SymbolicEncapsulation::encapsulateImpl(
       llvm::BasicBlock::Create(curM.getContext(), "setup", harnessFunc);
   auto *seSetupBlock =
       llvm::BasicBlock::Create(curM.getContext(), "se.setup", harnessFunc);
-  auto *callBlock =
-      llvm::BasicBlock::Create(curM.getContext(), "call", harnessFunc);
+  auto *callsBlock =
+      llvm::BasicBlock::Create(curM.getContext(), "calls", harnessFunc);
   auto *seTeardownBlock =
       llvm::BasicBlock::Create(curM.getContext(), "se.teardown", harnessFunc);
   auto *teardownBlock =
@@ -101,15 +101,20 @@ bool SymbolicEncapsulation::encapsulateImpl(
   createSymbolicDeclarations(*seSetupBlock, callArgs1, Directions);
   createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, Directions);
 
-  // setup control flow
-
   llvm::IRBuilder<> builder{curCtx};
+
+  // setup calls
+
+  createCall(*callsBlock, F, callArgs1);
+  createCall(*callsBlock, F, callArgs2);
+
+  // setup control flow
 
   builder.SetInsertPoint(setupBlock);
   builder.CreateBr(seSetupBlock);
   builder.SetInsertPoint(seSetupBlock);
-  builder.CreateBr(callBlock);
-  builder.SetInsertPoint(callBlock);
+  builder.CreateBr(callsBlock);
+  builder.SetInsertPoint(callsBlock);
   builder.CreateBr(seTeardownBlock);
   builder.SetInsertPoint(seTeardownBlock);
   builder.CreateBr(teardownBlock);
@@ -212,9 +217,6 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
     } else {
       // TODO indexing should be modified depending the values iterator
       // dependence
-      // auto *val = builder.CreateInBoundsGEP(Values[i],
-      // {builder.getInt64(0)});
-
       size_t typeSize = dataLayout.getTypeAllocSize(
           Values[i]->getType()->getPointerElementType());
       // TODO this allocation size needs to change
@@ -228,7 +230,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
           {Values[i], allocSize, builder.CreateGlobalStringPtr(symName)});
     }
   }
-} // namespace ephippion
+}
 
 void SymbolicEncapsulation::createSymbolicAssertions(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
@@ -261,6 +263,21 @@ void SymbolicEncapsulation::createSymbolicAssertions(
       builder.CreateCall(assertFunc, cond);
     }
   }
+}
+
+void SymbolicEncapsulation::createCall(
+    llvm::BasicBlock &Block, llvm::Function &Func,
+    llvm::SmallVectorImpl<llvm::Value *> &Args) {
+  llvm::IRBuilder<> builder{&Block};
+  llvm::SmallVector<llvm::Value *, 8> castArgs;
+  auto *funcType = Func.getFunctionType();
+
+  for (size_t i = 0; i < Args.size(); ++i) {
+    castArgs.push_back(
+        builder.CreateBitCast(Args[i], funcType->getParamType(i)));
+  }
+
+  builder.CreateCall(&Func, castArgs);
 }
 
 } // namespace ephippion

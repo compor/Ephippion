@@ -37,6 +37,7 @@
 
 namespace llvm {
 class Module;
+class Function;
 } // namespace llvm
 
 namespace ephippion {
@@ -60,9 +61,12 @@ class SymbolicEncapsulation {
                                   llvm::ArrayRef<ArgDirection> Directions);
 
   void createSymbolicAssertions(llvm::BasicBlock &Block,
-                       llvm::SmallVectorImpl<llvm::Value *> &Values1,
-                       llvm::SmallVectorImpl<llvm::Value *> &Values2,
-                       llvm::ArrayRef<ArgDirection> Directions);
+                                llvm::SmallVectorImpl<llvm::Value *> &Values1,
+                                llvm::SmallVectorImpl<llvm::Value *> &Values2,
+                                llvm::ArrayRef<ArgDirection> Directions);
+
+  void createCall(llvm::BasicBlock &Block, llvm::Function &Func,
+                  llvm::SmallVectorImpl<llvm::Value *> &Args);
 
   bool encapsulateImpl(llvm::Function &F,
                        llvm::ArrayRef<ArgDirection> Directions);
