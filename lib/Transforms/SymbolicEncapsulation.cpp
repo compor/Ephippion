@@ -250,8 +250,10 @@ void SymbolicEncapsulation::createSymbolicAssertions(
   assert(Values1.size() == Values2.size() && "Value set sizes differ!");
 
   auto &curM = *Block.getParent()->getParent();
+  auto &dataLayout = curM.getDataLayout();
 
   auto *assertFunc = DeclareKLEELikeFunc(curM, "klee_assert");
+  auto *memcmpFunc = DeclareKLEELikeFunc(curM, "memcmp");
 
   llvm::IRBuilder<> builder{&Block};
 
@@ -264,12 +266,24 @@ void SymbolicEncapsulation::createSymbolicAssertions(
       auto *cond = builder.CreateICmpEQ(Values1[i], Values2[i]);
       builder.CreateCall(assertFunc, cond);
     } else {
-      // TODO indexing should be modified depending the values iterator
-      // dependence
-      auto *val1 = builder.CreateInBoundsGEP(Values1[i], {builder.getInt64(0)});
-      auto *val2 = builder.CreateInBoundsGEP(Values2[i], {builder.getInt64(0)});
+      size_t typeSize = dataLayout.getTypeAllocSize(
+          Values1[i]->getType()->getPointerElementType());
+      assert(typeSize && "type size cannot be zero!");
 
-      auto *cond = builder.CreateICmpEQ(val1, val2);
+      llvm::Value *multiplier = ArgSpecs[i].IteratorDependent
+                                    ? builder.getInt64(IterationsNum)
+                                    : builder.getInt64(1);
+
+      auto *allocSize =
+          builder.CreateMul(multiplier, builder.getInt64(typeSize));
+
+      auto *call =
+          builder.CreateCall(memcmpFunc, {Values1[i], Values2[i], allocSize});
+      // auto *val1 = builder.CreateInBoundsGEP(Values1[i],
+      // {builder.getInt64(0)}); auto *val2 =
+      // builder.CreateInBoundsGEP(Values2[i], {builder.getInt64(0)});
+
+      auto *cond = builder.CreateICmpEQ(call, builder.getInt32(0));
       builder.CreateCall(assertFunc, cond);
     }
   }
