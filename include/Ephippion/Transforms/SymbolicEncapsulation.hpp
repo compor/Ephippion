@@ -51,9 +51,7 @@ private:
   llvm::StringRef HeapAllocFuncName;
   llvm::StringRef HeapDeallocFuncName;
 
-  void setupHarnessArgs(llvm::Function::arg_iterator Begin,
-                        llvm::Function::arg_iterator End,
-                        llvm::ArrayRef<ArgSpec> ArgSpecs,
+  void setupHarnessArgs(llvm::Function &Func, llvm::ArrayRef<ArgSpec> ArgSpecs,
                         llvm::BasicBlock &SetupBlock,
                         llvm::BasicBlock &TeardownBlock,
                         IterationsNumTy IterationsNum,

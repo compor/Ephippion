@@ -100,8 +100,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
       llvm::BasicBlock::Create(curM.getContext(), "exit", harnessFunc);
 
   llvm::SmallVector<llvm::Value *, 8> callArgs1, callArgs2;
-  setupHarnessArgs(F.arg_begin(), F.arg_end(), ArgSpecs, *setupBlock,
-                   *teardownBlock, IterationsNum, callArgs1, callArgs2);
+  setupHarnessArgs(F, ArgSpecs, *setupBlock, *teardownBlock, IterationsNum,
+                   callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, F, callArgs1, callArgs2,
                              IterationsNum, ArgSpecs);
@@ -136,26 +136,26 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 }
 
 void SymbolicEncapsulation::setupHarnessArgs(
-    llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
-    llvm::ArrayRef<ArgSpec> ArgSpecs, llvm::BasicBlock &SetupBlock,
-    llvm::BasicBlock &TeardownBlock, IterationsNumTy IterationsNum,
+    llvm::Function &Func, llvm::ArrayRef<ArgSpec> ArgSpecs,
+    llvm::BasicBlock &SetupBlock, llvm::BasicBlock &TeardownBlock,
+    IterationsNumTy IterationsNum,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs2) {
-  if (Begin == End) {
+  if (Func.arg_size() == 0) {
     return;
   }
 
   llvm::IRBuilder<> builder{&SetupBlock};
   llvm::SmallVector<llvm::Instruction *, 16> heapAllocs;
 
-  auto &curM = *Begin->getParent()->getParent();
+  auto &curM = *Func.getParent();
   auto &dataLayout = curM.getDataLayout();
 
   auto *heapAllocFunc = DeclareMallocLikeFunc(curM, HeapAllocFuncName);
   auto *heapDeallocFunc = DeclareFreeLikeFunc(curM, HeapDeallocFuncName);
 
   size_t argIdx = 0;
-  for (auto &curArg : llvm::make_range(Begin, End)) {
+  for (auto &curArg : Func.args()) {
     ArgDirection dir = AD_Inbound;
     if (ArgSpecs.size() && argIdx < ArgSpecs.size()) {
       dir = ArgSpecs[argIdx].Direction;
