@@ -76,7 +76,7 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
   // direct all unterminated body blocks to loop latch
   for (auto *e : Body) {
     if (!e->getTerminator()) {
-      builder.SetInsertPoint(&Preheader);
+      builder.SetInsertPoint(e);
       builder.CreateBr(latch);
     }
   }

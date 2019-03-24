@@ -306,7 +306,14 @@ void SymbolicEncapsulation::createSymbolicAssertions(
 void SymbolicEncapsulation::createCall(
     llvm::BasicBlock &Block, llvm::Function &Func,
     llvm::SmallVectorImpl<llvm::Value *> &Args) {
-  llvm::IRBuilder<> builder{&Block};
+  llvm::IRBuilder<> builder{Func.getContext()};
+
+  if (auto *term = Block.getTerminator()) {
+    builder.SetInsertPoint(term);
+  } else {
+    builder.SetInsertPoint(&Block);
+  }
+
   llvm::SmallVector<llvm::Value *, 8> castArgs;
   auto *funcType = Func.getFunctionType();
 
