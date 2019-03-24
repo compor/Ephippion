@@ -39,7 +39,7 @@
 namespace ephippion {
 
 bool SymbolicEncapsulation::encapsulate(llvm::Module &M,
-                                        uint64_t IterationsNum) {
+                                        IterationsNumTy IterationsNum) {
   bool hasChanged = false;
 
   for (auto &func : M) {
@@ -50,23 +50,23 @@ bool SymbolicEncapsulation::encapsulate(llvm::Module &M,
 }
 
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
-                                        uint64_t IterationsNum) {
-  return encapsulateImpl(F, {}, IterationsNum);
+                                        IterationsNumTy IterationsNum) {
+  return encapsulateImpl(F, IterationsNum, {});
 }
 
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
-                                        uint64_t IterationsNum,
+                                        IterationsNumTy IterationsNum,
                                         llvm::ArrayRef<ArgSpec> ArgSpecs) {
   // either argspec information must match func args or be empty
   assert((ArgSpecs.size() == 0 || F.arg_size() == ArgSpecs.size()) &&
          "Missing argspec information for function arguments!");
 
-  return encapsulateImpl(F, ArgSpecs, IterationsNum);
+  return encapsulateImpl(F, IterationsNum, ArgSpecs);
 }
 
 bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
-                                            llvm::ArrayRef<ArgSpec> ArgSpecs,
-                                            uint64_t IterationsNum) {
+                                            IterationsNumTy IterationsNum,
+                                            llvm::ArrayRef<ArgSpec> ArgSpecs) {
   if (F.isDeclaration()) {
     return false;
   }
@@ -104,8 +104,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
                    *teardownBlock, IterationsNum, callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, callArgs1, ArgSpecs);
-  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, ArgSpecs,
-                           IterationsNum);
+  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2,
+                           IterationsNum, ArgSpecs);
 
   llvm::IRBuilder<> builder{curCtx};
 
@@ -137,7 +137,7 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 void SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
     llvm::ArrayRef<ArgSpec> ArgSpecs, llvm::BasicBlock &SetupBlock,
-    llvm::BasicBlock &TeardownBlock, uint64_t IterationsNum,
+    llvm::BasicBlock &TeardownBlock, IterationsNumTy IterationsNum,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs2) {
   if (Begin == End) {
@@ -230,6 +230,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
       size_t typeSize = dataLayout.getTypeAllocSize(
           Values[i]->getType()->getPointerElementType());
       // TODO this allocation size needs to change
+
       auto *allocSize =
           builder.CreateMul(builder.getInt64(1), builder.getInt64(typeSize));
 
@@ -245,7 +246,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
 void SymbolicEncapsulation::createSymbolicAssertions(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
     llvm::SmallVectorImpl<llvm::Value *> &Values2,
-    llvm::ArrayRef<ArgSpec> ArgSpecs, uint64_t IterationsNum) {
+    IterationsNumTy IterationsNum, llvm::ArrayRef<ArgSpec> ArgSpecs) {
   assert(Values1.size() && Values2.size() && "Value sets are empty!");
   assert(Values1.size() == Values2.size() && "Value set sizes differ!");
 
@@ -279,10 +280,6 @@ void SymbolicEncapsulation::createSymbolicAssertions(
 
       auto *call =
           builder.CreateCall(memcmpFunc, {Values1[i], Values2[i], allocSize});
-      // auto *val1 = builder.CreateInBoundsGEP(Values1[i],
-      // {builder.getInt64(0)}); auto *val2 =
-      // builder.CreateInBoundsGEP(Values2[i], {builder.getInt64(0)});
-
       auto *cond = builder.CreateICmpEQ(call, builder.getInt32(0));
       builder.CreateCall(assertFunc, cond);
     }

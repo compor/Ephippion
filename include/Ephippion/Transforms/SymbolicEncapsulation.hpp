@@ -43,6 +43,10 @@ class Function;
 namespace ephippion {
 
 class SymbolicEncapsulation {
+public:
+  using IterationsNumTy = uint32_t;
+
+private:
   llvm::StringRef HarnessNamePrefix;
   llvm::StringRef HeapAllocFuncName;
   llvm::StringRef HeapDeallocFuncName;
@@ -51,7 +55,8 @@ class SymbolicEncapsulation {
                         llvm::Function::arg_iterator End,
                         llvm::ArrayRef<ArgSpec> ArgSpecs,
                         llvm::BasicBlock &SetupBlock,
-                        llvm::BasicBlock &TeardownBlock, uint64_t IterationsNum,
+                        llvm::BasicBlock &TeardownBlock,
+                        IterationsNumTy IterationsNum,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
@@ -62,14 +67,14 @@ class SymbolicEncapsulation {
   void createSymbolicAssertions(llvm::BasicBlock &Block,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values1,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values2,
-                                llvm::ArrayRef<ArgSpec> ArgSpecs,
-                                uint64_t IterationsNum);
+                                IterationsNumTy IterationsNum,
+                                llvm::ArrayRef<ArgSpec> ArgSpecs);
 
   void createCall(llvm::BasicBlock &Block, llvm::Function &Func,
                   llvm::SmallVectorImpl<llvm::Value *> &Args);
 
-  bool encapsulateImpl(llvm::Function &F, llvm::ArrayRef<ArgSpec> ArgSpecs,
-                       uint64_t IterationsNum);
+  bool encapsulateImpl(llvm::Function &F, IterationsNumTy IterationsNum,
+                       llvm::ArrayRef<ArgSpec> ArgSpecs);
 
 public:
   explicit SymbolicEncapsulation(llvm::StringRef Prefix = "symenc_")
@@ -78,9 +83,9 @@ public:
 
   SymbolicEncapsulation(const SymbolicEncapsulation &) = default;
 
-  bool encapsulate(llvm::Module &M, uint64_t IterationsNum);
-  bool encapsulate(llvm::Function &F, uint64_t IterationsNum);
-  bool encapsulate(llvm::Function &F, uint64_t IterationsNum,
+  bool encapsulate(llvm::Module &M, IterationsNumTy IterationsNum);
+  bool encapsulate(llvm::Function &F, IterationsNumTy IterationsNum);
+  bool encapsulate(llvm::Function &F, IterationsNumTy IterationsNum,
                    llvm::ArrayRef<ArgSpec> ArgSpecs);
 };
 
