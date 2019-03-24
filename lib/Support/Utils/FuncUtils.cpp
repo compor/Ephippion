@@ -44,6 +44,14 @@ llvm::Function *ephippion::DeclareFreeLikeFunc(llvm::Module &M,
                      {llvm::Type::getInt8PtrTy(M.getContext())});
 }
 
+llvm::Function *ephippion::DeclareMemcmpLikeFunc(llvm::Module &M,
+                                                 llvm::StringRef Name) {
+  auto &curCtx = M.getContext();
+  auto *ptrType = llvm::Type::getInt8PtrTy(curCtx);
+  return DeclareFunc(M, Name, llvm::Type::getInt32Ty(curCtx),
+                     {ptrType, ptrType, llvm::Type::getInt64Ty(curCtx)});
+}
+
 llvm::Function *ephippion::DeclareKLEELikeFunc(llvm::Module &M,
                                                llvm::StringRef Name) {
   return llvm::cast<llvm::Function>(M.getOrInsertFunction(
