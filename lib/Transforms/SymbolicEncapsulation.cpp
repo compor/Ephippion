@@ -103,8 +103,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   setupHarnessArgs(F.arg_begin(), F.arg_end(), ArgSpecs, *setupBlock,
                    *teardownBlock, IterationsNum, callArgs1, callArgs2);
 
-  createSymbolicDeclarations(*seSetupBlock, F, callArgs1, IterationsNum,
-                             ArgSpecs);
+  createSymbolicDeclarations(*seSetupBlock, F, callArgs1, callArgs2,
+                             IterationsNum, ArgSpecs);
   createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2,
                            IterationsNum, ArgSpecs);
 
@@ -208,9 +208,10 @@ void SymbolicEncapsulation::setupHarnessArgs(
 
 void SymbolicEncapsulation::createSymbolicDeclarations(
     llvm::BasicBlock &Block, llvm::Function &Func,
-    llvm::SmallVectorImpl<llvm::Value *> &Values, IterationsNumTy IterationsNum,
-    llvm::ArrayRef<ArgSpec> ArgSpecs) {
-  assert(Values.size() && "Value set is empty!");
+    llvm::SmallVectorImpl<llvm::Value *> &Values1,
+    llvm::SmallVectorImpl<llvm::Value *> &Values2,
+    IterationsNumTy IterationsNum, llvm::ArrayRef<ArgSpec> ArgSpecs) {
+  assert((Values1.size() || Values2.size()) && "Value sets are empty!");
 
   auto &curM = *Block.getParent()->getParent();
   auto &dataLayout = curM.getDataLayout();
@@ -226,7 +227,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
       continue;
     }
 
-    if (!Values[argIdx]->getType()->isPointerTy()) {
+    if (!Values1[argIdx]->getType()->isPointerTy()) {
       // TODO
     } else {
       size_t typeSize = dataLayout.getTypeAllocSize(
@@ -241,10 +242,18 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
           builder.CreateMul(multiplier, builder.getInt64(typeSize));
 
       std::string symName =
-          "sym.in." + Values[argIdx]->getName().str() + std::to_string(argIdx);
+          "sym.in." + Values1[argIdx]->getName().str() + std::to_string(argIdx);
       builder.CreateCall(
           symbolizeFunc,
-          {Values[argIdx], allocSize, builder.CreateGlobalStringPtr(symName)});
+          {Values1[argIdx], allocSize, builder.CreateGlobalStringPtr(symName)});
+
+      if (isOutbound(ArgSpecs[argIdx].Direction)) {
+        std::string symName = "sym.in." + Values2[argIdx]->getName().str() +
+                              std::to_string(argIdx);
+        builder.CreateCall(symbolizeFunc,
+                           {Values2[argIdx], allocSize,
+                            builder.CreateGlobalStringPtr(symName)});
+      }
     }
 
     ++argIdx;
