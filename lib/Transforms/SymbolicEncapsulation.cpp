@@ -148,6 +148,7 @@ void SymbolicEncapsulation::setupHarnessArgs(
   llvm::SmallVector<llvm::Instruction *, 16> heapAllocs;
 
   auto &curM = *Begin->getParent()->getParent();
+  auto &dataLayout = curM.getDataLayout();
 
   auto *heapAllocFunc = DeclareMallocLikeFunc(curM, HeapAllocFuncName);
   auto *heapDeallocFunc = DeclareFreeLikeFunc(curM, HeapDeallocFuncName);
@@ -171,13 +172,16 @@ void SymbolicEncapsulation::setupHarnessArgs(
     } else {
       // TODO more checking has to take place here for more ptr indirection
 
-      auto &dataLayout = curArg.getParent()->getParent()->getDataLayout();
       size_t typeSize = dataLayout.getTypeAllocSize(
           curArg.getType()->getPointerElementType());
       assert(typeSize && "type size cannot be zero!");
 
-      auto *allocSize = builder.CreateMul(builder.getInt64(IterationsNum),
-                                          builder.getInt64(typeSize));
+      llvm::Value *multiplier = ArgSpecs[argIdx].IteratorDependent
+                                    ? builder.getInt64(IterationsNum)
+                                    : builder.getInt64(1);
+
+      auto *allocSize =
+          builder.CreateMul(multiplier, builder.getInt64(typeSize));
 
       auto *arg1 = builder.CreateCall(heapAllocFunc, allocSize);
       heapAllocs.push_back(arg1);
