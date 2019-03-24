@@ -34,7 +34,7 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
     LoopDirection direction = LD_Decreasing;
   }
 
-  auto &curCtx = Body[0]->getParent()->getContext();
+  auto &curCtx = Preheader.getParent()->getContext();
 
   auto *hdr = llvm::BasicBlock::Create(curCtx, "hdr");
   auto *latch = llvm::BasicBlock::Create(curCtx, "latch");
@@ -70,10 +70,8 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
   builder.CreateBr(hdr);
 
   // add induction phi inputs
-  ind->setIncomingValue(0, builder.getInt64(Start));
-  ind->setIncomingBlock(0, &Preheader);
-  ind->setIncomingValue(1, step);
-  ind->setIncomingBlock(1, latch);
+  ind->addIncoming(builder.getInt64(Start), &Preheader);
+  ind->addIncoming(step, latch);
 
   // direct all unterminated body blocks to loop latch
   for (auto *e : Body) {
