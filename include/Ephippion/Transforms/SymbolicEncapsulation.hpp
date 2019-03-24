@@ -46,13 +46,13 @@ class SymbolicEncapsulation {
   llvm::StringRef HarnessNamePrefix;
   llvm::StringRef HeapAllocFuncName;
   llvm::StringRef HeapDeallocFuncName;
-  uint64_t AllocElementsNum;
 
   void setupHarnessArgs(llvm::Function::arg_iterator Begin,
                         llvm::Function::arg_iterator End,
                         llvm::ArrayRef<ArgSpec> ArgSpecs,
                         llvm::BasicBlock &SetupBlock,
                         llvm::BasicBlock &TeardownBlock,
+                        uint64_t IterationsNum,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
@@ -72,10 +72,9 @@ class SymbolicEncapsulation {
                        llvm::ArrayRef<ArgSpec> ArgSpecs);
 
 public:
-  explicit SymbolicEncapsulation(uint64_t AllocElementsNum,
-                                 llvm::StringRef Prefix = "symenc_")
-      : AllocElementsNum(AllocElementsNum), HarnessNamePrefix{Prefix},
-        HeapAllocFuncName{"malloc"}, HeapDeallocFuncName{"free"} {}
+  explicit SymbolicEncapsulation(llvm::StringRef Prefix = "symenc_")
+      : HarnessNamePrefix{Prefix}, HeapAllocFuncName{"malloc"},
+        HeapDeallocFuncName{"free"} {}
 
   SymbolicEncapsulation(const SymbolicEncapsulation &) = default;
 

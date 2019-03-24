@@ -18,10 +18,10 @@
 llvm::cl::OptionCategory EphippionCLCategory("Ephipion Pass",
                                              "Options for Ephippion pass");
 
-llvm::cl::opt<uint64_t> AllocElementsNum(
+llvm::cl::opt<uint32_t> AllocElementsNum(
     "eph-alloc-elements", llvm::cl::Hidden,
     llvm::cl::desc("num of heap allocation elements for arrays"),
-    llvm::cl::init(5), llvm::cl::cat(EphippionCLCategory));
+    llvm::cl::init(1), llvm::cl::cat(EphippionCLCategory));
 
 llvm::cl::list<std::string>
     FunctionWhiteList("eph-func-wl", llvm::cl::Hidden,

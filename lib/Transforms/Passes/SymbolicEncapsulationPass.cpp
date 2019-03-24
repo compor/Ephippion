@@ -94,7 +94,7 @@ SymbolicEncapsulationPass::SymbolicEncapsulationPass() {
 
 bool SymbolicEncapsulationPass::run(llvm::Module &M) {
   bool hasChanged = false;
-  SymbolicEncapsulation senc{AllocElementsNum};
+  SymbolicEncapsulation senc;
 
   for (auto &func : M) {
     if (FunctionWhiteList.size()) {
@@ -106,7 +106,7 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
       }
     }
 
-    hasChanged |= senc.encapsulate(func, 10, ArgSpecs);
+    hasChanged |= senc.encapsulate(func, AllocElementsNum, ArgSpecs);
   }
 
   return hasChanged;

@@ -16,7 +16,7 @@
 
 extern llvm::cl::OptionCategory EphippionCLCategory;
 
-extern llvm::cl::opt<uint64_t> AllocElementsNum;
+extern llvm::cl::opt<uint32_t> AllocElementsNum;
 
 extern llvm::cl::list<std::string> FunctionWhiteList;
 

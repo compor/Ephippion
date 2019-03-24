@@ -101,7 +101,7 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 
   llvm::SmallVector<llvm::Value *, 8> callArgs1, callArgs2;
   setupHarnessArgs(F.arg_begin(), F.arg_end(), ArgSpecs, *setupBlock,
-                   *teardownBlock, callArgs1, callArgs2);
+                   *teardownBlock, IterationsNum, callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, callArgs1, ArgSpecs);
   createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, ArgSpecs);
@@ -136,7 +136,7 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 void SymbolicEncapsulation::setupHarnessArgs(
     llvm::Function::arg_iterator Begin, llvm::Function::arg_iterator End,
     llvm::ArrayRef<ArgSpec> ArgSpecs, llvm::BasicBlock &SetupBlock,
-    llvm::BasicBlock &TeardownBlock,
+    llvm::BasicBlock &TeardownBlock, uint64_t IterationsNum,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs2) {
   if (Begin == End) {
@@ -175,7 +175,7 @@ void SymbolicEncapsulation::setupHarnessArgs(
           curArg.getType()->getPointerElementType());
       assert(typeSize && "type size cannot be zero!");
 
-      auto *allocSize = builder.CreateMul(builder.getInt64(AllocElementsNum),
+      auto *allocSize = builder.CreateMul(builder.getInt64(IterationsNum),
                                           builder.getInt64(typeSize));
 
       auto *arg1 = builder.CreateCall(heapAllocFunc, allocSize);
