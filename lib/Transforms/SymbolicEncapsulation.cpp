@@ -51,7 +51,7 @@ bool SymbolicEncapsulation::encapsulate(llvm::Module &M,
 
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
                                         uint64_t IterationsNum) {
-  return encapsulateImpl(F, IterationsNum, {});
+  return encapsulateImpl(F, {}, IterationsNum);
 }
 
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
@@ -61,12 +61,12 @@ bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
   assert((ArgSpecs.size() == 0 || F.arg_size() == ArgSpecs.size()) &&
          "Missing argspec information for function arguments!");
 
-  return encapsulateImpl(F, IterationsNum, ArgSpecs);
+  return encapsulateImpl(F, ArgSpecs, IterationsNum);
 }
 
 bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
-                                            uint64_t IterationsNum,
-                                            llvm::ArrayRef<ArgSpec> ArgSpecs) {
+                                            llvm::ArrayRef<ArgSpec> ArgSpecs,
+                                            uint64_t IterationsNum) {
   if (F.isDeclaration()) {
     return false;
   }
@@ -104,7 +104,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
                    *teardownBlock, IterationsNum, callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, callArgs1, ArgSpecs);
-  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, ArgSpecs);
+  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2, ArgSpecs,
+                           IterationsNum);
 
   llvm::IRBuilder<> builder{curCtx};
 
@@ -240,7 +241,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
 void SymbolicEncapsulation::createSymbolicAssertions(
     llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
     llvm::SmallVectorImpl<llvm::Value *> &Values2,
-    llvm::ArrayRef<ArgSpec> ArgSpecs) {
+    llvm::ArrayRef<ArgSpec> ArgSpecs, uint64_t IterationsNum) {
   assert(Values1.size() && Values2.size() && "Value sets are empty!");
   assert(Values1.size() == Values2.size() && "Value set sizes differ!");
 

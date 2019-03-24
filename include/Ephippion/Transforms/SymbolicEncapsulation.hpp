@@ -51,8 +51,7 @@ class SymbolicEncapsulation {
                         llvm::Function::arg_iterator End,
                         llvm::ArrayRef<ArgSpec> ArgSpecs,
                         llvm::BasicBlock &SetupBlock,
-                        llvm::BasicBlock &TeardownBlock,
-                        uint64_t IterationsNum,
+                        llvm::BasicBlock &TeardownBlock, uint64_t IterationsNum,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
@@ -63,13 +62,14 @@ class SymbolicEncapsulation {
   void createSymbolicAssertions(llvm::BasicBlock &Block,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values1,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values2,
-                                llvm::ArrayRef<ArgSpec> ArgSpecs);
+                                llvm::ArrayRef<ArgSpec> ArgSpecs,
+                                uint64_t IterationsNum);
 
   void createCall(llvm::BasicBlock &Block, llvm::Function &Func,
                   llvm::SmallVectorImpl<llvm::Value *> &Args);
 
-  bool encapsulateImpl(llvm::Function &F, uint64_t IterationsNum,
-                       llvm::ArrayRef<ArgSpec> ArgSpecs);
+  bool encapsulateImpl(llvm::Function &F, llvm::ArrayRef<ArgSpec> ArgSpecs,
+                       uint64_t IterationsNum);
 
 public:
   explicit SymbolicEncapsulation(llvm::StringRef Prefix = "symenc_")
