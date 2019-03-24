@@ -103,7 +103,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   setupHarnessArgs(F.arg_begin(), F.arg_end(), ArgSpecs, *setupBlock,
                    *teardownBlock, IterationsNum, callArgs1, callArgs2);
 
-  createSymbolicDeclarations(*seSetupBlock, callArgs1, ArgSpecs);
+  createSymbolicDeclarations(*seSetupBlock, F, callArgs1, IterationsNum,
+                             ArgSpecs);
   createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2,
                            IterationsNum, ArgSpecs);
 
@@ -206,7 +207,8 @@ void SymbolicEncapsulation::setupHarnessArgs(
 }
 
 void SymbolicEncapsulation::createSymbolicDeclarations(
-    llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values,
+    llvm::BasicBlock &Block, llvm::Function &Func,
+    llvm::SmallVectorImpl<llvm::Value *> &Values, IterationsNumTy IterationsNum,
     llvm::ArrayRef<ArgSpec> ArgSpecs) {
   assert(Values.size() && "Value set is empty!");
 
@@ -217,29 +219,35 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
 
   llvm::IRBuilder<> builder{&Block};
 
-  for (size_t i = 0; i < Values.size(); ++i) {
-    if (ArgSpecs.size() && isOnlyOutbound(ArgSpecs[i].Direction)) {
+  size_t argIdx = 0;
+  for (auto &curArg : Func.args()) {
+    if (ArgSpecs.size() && isOnlyOutbound(ArgSpecs[argIdx].Direction)) {
+      ++argIdx;
       continue;
     }
 
-    if (!Values[i]->getType()->isPointerTy()) {
+    if (!Values[argIdx]->getType()->isPointerTy()) {
       // TODO
     } else {
-      // TODO indexing should be modified depending the values iterator
-      // dependence
       size_t typeSize = dataLayout.getTypeAllocSize(
-          Values[i]->getType()->getPointerElementType());
-      // TODO this allocation size needs to change
+          curArg.getType()->getPointerElementType());
+      assert(typeSize && "type size cannot be zero!");
+
+      llvm::Value *multiplier = ArgSpecs[argIdx].IteratorDependent
+                                    ? builder.getInt64(IterationsNum)
+                                    : builder.getInt64(1);
 
       auto *allocSize =
-          builder.CreateMul(builder.getInt64(1), builder.getInt64(typeSize));
+          builder.CreateMul(multiplier, builder.getInt64(typeSize));
 
       std::string symName =
-          "sym.in." + Values[i]->getName().str() + std::to_string(i);
+          "sym.in." + Values[argIdx]->getName().str() + std::to_string(argIdx);
       builder.CreateCall(
           symbolizeFunc,
-          {Values[i], allocSize, builder.CreateGlobalStringPtr(symName)});
+          {Values[argIdx], allocSize, builder.CreateGlobalStringPtr(symName)});
     }
+
+    ++argIdx;
   }
 }
 
