@@ -92,8 +92,18 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
       llvm::BasicBlock::Create(curM.getContext(), "setup", harnessFunc);
   auto *seSetupBlock =
       llvm::BasicBlock::Create(curM.getContext(), "se.setup", harnessFunc);
-  auto *callsBlock =
-      llvm::BasicBlock::Create(curM.getContext(), "calls", harnessFunc);
+  auto *call1SetupBlock =
+      llvm::BasicBlock::Create(curM.getContext(), "call1.setup", harnessFunc);
+  auto *call2SetupBlock =
+      llvm::BasicBlock::Create(curM.getContext(), "call2.setup", harnessFunc);
+  auto *call1Block =
+      llvm::BasicBlock::Create(curM.getContext(), "call1.body", harnessFunc);
+  auto *call2Block =
+      llvm::BasicBlock::Create(curM.getContext(), "call2.body", harnessFunc);
+  auto *call1TeardownBlock = llvm::BasicBlock::Create(
+      curM.getContext(), "call1.teardown", harnessFunc);
+  auto *call2TeardownBlock = llvm::BasicBlock::Create(
+      curM.getContext(), "call2.teardown", harnessFunc);
   auto *seTeardownBlock =
       llvm::BasicBlock::Create(curM.getContext(), "se.teardown", harnessFunc);
   auto *teardownBlock =
@@ -113,17 +123,27 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   llvm::IRBuilder<> builder{curCtx};
 
   // setup calls
+  LoopIRBuilder loopBuilder;
 
-  createCall(*callsBlock, F, callArgs1);
-  createCall(*callsBlock, F, callArgs2);
+  auto *indVar1 = loopBuilder.CreateLoop({call1Block}, *call1SetupBlock,
+                                         *call1TeardownBlock, 0, IterationsNum);
+  auto *indVar2 =
+      loopBuilder.CreateLoop({call2Block}, *call2SetupBlock,
+                             *call2TeardownBlock, IterationsNum - 1, 0);
+
+  // TODO save a spot for the iterator to be passed as an argument
+  createCall(*call1Block, F, callArgs1);
+  createCall(*call2Block, F, callArgs2);
 
   // setup control flow
 
   builder.SetInsertPoint(setupBlock);
   builder.CreateBr(seSetupBlock);
   builder.SetInsertPoint(seSetupBlock);
-  builder.CreateBr(callsBlock);
-  builder.SetInsertPoint(callsBlock);
+  builder.CreateBr(call1SetupBlock);
+  builder.SetInsertPoint(call1TeardownBlock);
+  builder.CreateBr(call2SetupBlock);
+  builder.SetInsertPoint(call2TeardownBlock);
   builder.CreateBr(seTeardownBlock);
   builder.SetInsertPoint(seTeardownBlock);
   builder.CreateBr(teardownBlock);
