@@ -34,11 +34,12 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
     LoopDirection direction = LD_Decreasing;
   }
 
-  auto &curCtx = Preheader.getParent()->getContext();
+  auto *curFunc = Preheader.getParent();
+  auto &curCtx = curFunc->getContext();
 
-  auto *hdr = llvm::BasicBlock::Create(curCtx, "hdr");
-  auto *latch = llvm::BasicBlock::Create(curCtx, "latch");
-  auto *exit = llvm::BasicBlock::Create(curCtx, "exit");
+  auto *hdr = llvm::BasicBlock::Create(curCtx, "hdr", curFunc);
+  auto *latch = llvm::BasicBlock::Create(curCtx, "latch", curFunc);
+  auto *exit = llvm::BasicBlock::Create(curCtx, "exit", curFunc);
 
   // add induction variable and loop condition
   llvm::IRBuilder<> builder{hdr};
