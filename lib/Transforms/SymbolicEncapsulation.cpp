@@ -250,8 +250,26 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
     }
 
     if (!curArg.getType()->isPointerTy()) {
-      LLVM_DEBUG(llvm::dbgs() << "skipping unhandled non-pointer argument: "
-                              << argIdx << '\n';);
+      size_t typeSize = dataLayout.getTypeAllocSize(
+          Values1[argIdx]->getType()->getPointerElementType());
+      assert(typeSize && "type size cannot be zero!");
+
+      auto *allocSize =
+          builder.CreateMul(builder.getInt64(1), builder.getInt64(typeSize));
+
+      std::string symName =
+          "sym.in." + Values1[argIdx]->getName().str() + std::to_string(argIdx);
+      builder.CreateCall(
+          symbolizeFunc,
+          {Values1[argIdx], allocSize, builder.CreateGlobalStringPtr(symName)});
+
+      if (isOutbound(ArgSpecs[argIdx].Direction)) {
+        std::string symName = "sym.in." + Values2[argIdx]->getName().str() +
+                              std::to_string(argIdx);
+        builder.CreateCall(symbolizeFunc,
+                           {Values2[argIdx], allocSize,
+                            builder.CreateGlobalStringPtr(symName)});
+      }
     } else {
       size_t typeSize = dataLayout.getTypeAllocSize(
           curArg.getType()->getPointerElementType());
