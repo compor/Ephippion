@@ -249,8 +249,9 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
       continue;
     }
 
-    if (!Values1[argIdx]->getType()->isPointerTy()) {
-      // TODO
+    if (!curArg.getType()->isPointerTy()) {
+      LLVM_DEBUG(llvm::dbgs() << "skipping unhandled non-pointer argument: "
+                              << argIdx << '\n';);
     } else {
       size_t typeSize = dataLayout.getTypeAllocSize(
           curArg.getType()->getPointerElementType());
@@ -336,15 +337,19 @@ void SymbolicEncapsulation::createCall(
     builder.SetInsertPoint(&Block);
   }
 
-  llvm::SmallVector<llvm::Value *, 8> castArgs;
+  llvm::SmallVector<llvm::Value *, 8> actualArgs;
   auto *funcType = EncapsulatedFunc.getFunctionType();
 
   for (size_t i = 0; i < Args.size(); ++i) {
-    castArgs.push_back(
-        builder.CreateBitCast(Args[i], funcType->getParamType(i)));
+    if (llvm::isa<llvm::AllocaInst>(Args[i])) {
+      actualArgs.push_back(builder.CreateLoad(Args[i]));
+    } else {
+      actualArgs.push_back(
+          builder.CreateBitCast(Args[i], funcType->getParamType(i)));
+    }
   }
 
-  builder.CreateCall(&EncapsulatedFunc, castArgs);
+  builder.CreateCall(&EncapsulatedFunc, actualArgs);
 }
 
 } // namespace ephippion
