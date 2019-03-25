@@ -6,6 +6,8 @@
 
 #include "Ephippion/Support/Utils/FuncUtils.hpp"
 
+#include "Ephippion/Support/IR/LoopIRBuilder.hpp"
+
 #include "llvm/IR/Function.h"
 // using llvm::Function
 
@@ -136,26 +138,26 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 }
 
 void SymbolicEncapsulation::setupHarnessArgs(
-    llvm::Function &Func, llvm::ArrayRef<ArgSpec> ArgSpecs,
+    llvm::Function &EncapsulatedFunc, llvm::ArrayRef<ArgSpec> ArgSpecs,
     llvm::BasicBlock &SetupBlock, llvm::BasicBlock &TeardownBlock,
     IterationsNumTy IterationsNum,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
     llvm::SmallVectorImpl<llvm::Value *> &CallArgs2) {
-  if (Func.arg_size() == 0) {
+  if (EncapsulatedFunc.arg_size() == 0) {
     return;
   }
 
   llvm::IRBuilder<> builder{&SetupBlock};
   llvm::SmallVector<llvm::Instruction *, 16> heapAllocs;
 
-  auto &curM = *Func.getParent();
+  auto &curM = *EncapsulatedFunc.getParent();
   auto &dataLayout = curM.getDataLayout();
 
   auto *heapAllocFunc = DeclareMallocLikeFunc(curM, HeapAllocFuncName);
   auto *heapDeallocFunc = DeclareFreeLikeFunc(curM, HeapDeallocFuncName);
 
   size_t argIdx = 0;
-  for (auto &curArg : Func.args()) {
+  for (auto &curArg : EncapsulatedFunc.args()) {
     ArgDirection dir = AD_Inbound;
     if (ArgSpecs.size() && argIdx < ArgSpecs.size()) {
       dir = ArgSpecs[argIdx].Direction;
@@ -207,11 +209,11 @@ void SymbolicEncapsulation::setupHarnessArgs(
 }
 
 void SymbolicEncapsulation::createSymbolicDeclarations(
-    llvm::BasicBlock &Block, llvm::Function &Func,
+    llvm::BasicBlock &Block, llvm::Function &EncapsulatedFunc,
     llvm::SmallVectorImpl<llvm::Value *> &Values1,
     llvm::SmallVectorImpl<llvm::Value *> &Values2,
     IterationsNumTy IterationsNum, llvm::ArrayRef<ArgSpec> ArgSpecs) {
-  assert((Values1.size() || Values2.size()) && "Value sets are empty!");
+  assert(Values1.size() && Values2.size() && "Value sets are empty!");
 
   auto &curM = *Block.getParent()->getParent();
   auto &dataLayout = curM.getDataLayout();
@@ -221,7 +223,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
   llvm::IRBuilder<> builder{&Block};
 
   size_t argIdx = 0;
-  for (auto &curArg : Func.args()) {
+  for (auto &curArg : EncapsulatedFunc.args()) {
     if (ArgSpecs.size() && isOnlyOutbound(ArgSpecs[argIdx].Direction)) {
       ++argIdx;
       continue;
@@ -304,9 +306,9 @@ void SymbolicEncapsulation::createSymbolicAssertions(
 }
 
 void SymbolicEncapsulation::createCall(
-    llvm::BasicBlock &Block, llvm::Function &Func,
+    llvm::BasicBlock &Block, llvm::Function &EncapsulatedFunc,
     llvm::SmallVectorImpl<llvm::Value *> &Args) {
-  llvm::IRBuilder<> builder{Func.getContext()};
+  llvm::IRBuilder<> builder{EncapsulatedFunc.getContext()};
 
   if (auto *term = Block.getTerminator()) {
     builder.SetInsertPoint(term);
@@ -315,14 +317,14 @@ void SymbolicEncapsulation::createCall(
   }
 
   llvm::SmallVector<llvm::Value *, 8> castArgs;
-  auto *funcType = Func.getFunctionType();
+  auto *funcType = EncapsulatedFunc.getFunctionType();
 
   for (size_t i = 0; i < Args.size(); ++i) {
     castArgs.push_back(
         builder.CreateBitCast(Args[i], funcType->getParamType(i)));
   }
 
-  builder.CreateCall(&Func, castArgs);
+  builder.CreateCall(&EncapsulatedFunc, castArgs);
 }
 
 } // namespace ephippion

@@ -51,14 +51,16 @@ private:
   llvm::StringRef HeapAllocFuncName;
   llvm::StringRef HeapDeallocFuncName;
 
-  void setupHarnessArgs(llvm::Function &Func, llvm::ArrayRef<ArgSpec> ArgSpecs,
+  void setupHarnessArgs(llvm::Function &EncapsulatedFunc,
+                        llvm::ArrayRef<ArgSpec> ArgSpecs,
                         llvm::BasicBlock &SetupBlock,
                         llvm::BasicBlock &TeardownBlock,
                         IterationsNumTy IterationsNum,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
-  void createSymbolicDeclarations(llvm::BasicBlock &Block, llvm::Function &Func,
+  void createSymbolicDeclarations(llvm::BasicBlock &Block,
+                                  llvm::Function &Func,
                                   llvm::SmallVectorImpl<llvm::Value *> &Values1,
                                   llvm::SmallVectorImpl<llvm::Value *> &Values2,
                                   IterationsNumTy IterationsNum,
@@ -70,7 +72,7 @@ private:
                                 IterationsNumTy IterationsNum,
                                 llvm::ArrayRef<ArgSpec> ArgSpecs);
 
-  void createCall(llvm::BasicBlock &Block, llvm::Function &Func,
+  void createCall(llvm::BasicBlock &Block, llvm::Function &EncapsulatedFunc,
                   llvm::SmallVectorImpl<llvm::Value *> &Args);
 
   bool encapsulateImpl(llvm::Function &F, IterationsNumTy IterationsNum,
