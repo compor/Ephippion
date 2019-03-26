@@ -104,8 +104,10 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
       curM.getContext(), "call1.teardown", harnessFunc);
   auto *call2TeardownBlock = llvm::BasicBlock::Create(
       curM.getContext(), "call2.teardown", harnessFunc);
-  auto *seTeardownBlock =
-      llvm::BasicBlock::Create(curM.getContext(), "se.teardown", harnessFunc);
+  auto *seStartTeardownBlock = llvm::BasicBlock::Create(
+      curM.getContext(), "se.start.teardown", harnessFunc);
+  auto *seEndTeardownBlock = llvm::BasicBlock::Create(
+      curM.getContext(), "se.end.teardown", harnessFunc);
   auto *teardownBlock =
       llvm::BasicBlock::Create(curM.getContext(), "teardown", harnessFunc);
   auto *exitBlock =
@@ -117,8 +119,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 
   createSymbolicDeclarations(*seSetupBlock, F, callArgs1, callArgs2,
                              IterationsNum, ArgSpecs);
-  createSymbolicAssertions(*seTeardownBlock, callArgs1, callArgs2,
-                           IterationsNum, ArgSpecs);
+  createSymbolicAssertions(*seStartTeardownBlock, *seEndTeardownBlock,
+                           callArgs1, callArgs2, IterationsNum, ArgSpecs);
 
   llvm::IRBuilder<> builder{curCtx};
 
@@ -144,8 +146,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   builder.SetInsertPoint(call1TeardownBlock);
   builder.CreateBr(call2SetupBlock);
   builder.SetInsertPoint(call2TeardownBlock);
-  builder.CreateBr(seTeardownBlock);
-  builder.SetInsertPoint(seTeardownBlock);
+  builder.CreateBr(seStartTeardownBlock);
+  builder.SetInsertPoint(seEndTeardownBlock);
   builder.CreateBr(teardownBlock);
   builder.SetInsertPoint(teardownBlock);
   builder.CreateBr(exitBlock);
@@ -302,39 +304,52 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
 }
 
 void SymbolicEncapsulation::createSymbolicAssertions(
-    llvm::BasicBlock &Block, llvm::SmallVectorImpl<llvm::Value *> &Values1,
+    llvm::BasicBlock &StartBlock, llvm::BasicBlock &EndBlock,
+    llvm::SmallVectorImpl<llvm::Value *> &Values1,
     llvm::SmallVectorImpl<llvm::Value *> &Values2,
     IterationsNumTy IterationsNum, llvm::ArrayRef<ArgSpec> ArgSpecs) {
   assert(Values1.size() && Values2.size() && "Value sets are empty!");
   assert(Values1.size() == Values2.size() && "Value set sizes differ!");
 
-  auto &curF = *Block.getParent();
+  auto &curF = *StartBlock.getParent();
   auto &curM = *curF.getParent();
   auto &dataLayout = curM.getDataLayout();
   auto *assertFunc = DeclareAssertLikeFunc(curM, "__assert_fail");
   auto *memcmpFunc = DeclareKLEELikeFunc(curM, "memcmp");
 
-  llvm::IRBuilder<> builder{&Block};
+  llvm::SmallVector<llvm::Value *, 8> conditions;
+  llvm::SmallVector<llvm::BasicBlock *, 8> condBlocks, failBlocks;
+
+  llvm::IRBuilder<> builder{&StartBlock};
   auto *funcName = builder.CreateGlobalStringPtr(curF.getName());
+  auto *modName = builder.CreateGlobalStringPtr(curM.getName());
+  auto *assertText = builder.CreateGlobalStringPtr("FAILED");
 
   for (size_t i = 0; i < Values1.size(); ++i) {
     if (ArgSpecs.size() && !isOutbound(ArgSpecs[i].Direction)) {
       continue;
     }
 
-    if (!Values1[i]->getType()->isPointerTy()) {
-      auto *cond = builder.CreateICmpEQ(Values1[i], Values2[i]);
-      // builder.CreateCall(assertFunc, cond);
+    LLVM_DEBUG(llvm::dbgs() << "creating assertion on arg: " << i << '\n';);
 
+    condBlocks.push_back(llvm::BasicBlock::Create(
+        curM.getContext(), "cond" + std::to_string(i), &curF));
+    failBlocks.push_back(llvm::BasicBlock::Create(
+        curM.getContext(), "fail" + std::to_string(i), &curF));
+
+    if (!Values1[i]->getType()->isPointerTy()) {
+      builder.SetInsertPoint(condBlocks.back());
+      conditions.push_back(builder.CreateICmpEQ(Values1[i], Values2[i]));
+
+      builder.SetInsertPoint(failBlocks.back());
       builder.CreateCall(assertFunc,
-                         {builder.CreateGlobalStringPtr("FAILED"),
-                          builder.CreateGlobalStringPtr(curM.getName()),
-                          builder.getInt32(0), funcName});
+                         {assertText, modName, builder.getInt32(0), funcName});
     } else {
       size_t typeSize = dataLayout.getTypeAllocSize(
           Values1[i]->getType()->getPointerElementType());
       assert(typeSize && "type size cannot be zero!");
 
+      builder.SetInsertPoint(condBlocks.back());
       llvm::Value *multiplier = ArgSpecs[i].IteratorDependent
                                     ? builder.getInt64(IterationsNum)
                                     : builder.getInt64(1);
@@ -344,14 +359,41 @@ void SymbolicEncapsulation::createSymbolicAssertions(
 
       auto *call =
           builder.CreateCall(memcmpFunc, {Values1[i], Values2[i], allocSize});
-      auto *cond = builder.CreateICmpEQ(call, builder.getInt32(0));
+      conditions.push_back(builder.CreateICmpEQ(call, builder.getInt32(0)));
 
+      builder.SetInsertPoint(failBlocks.back());
       builder.CreateCall(assertFunc,
-                         {builder.CreateGlobalStringPtr("FAILED"),
-                          builder.CreateGlobalStringPtr(curM.getName()),
-                          builder.getInt32(0), funcName});
+                         {assertText, modName, builder.getInt32(0), funcName});
     }
   }
+
+  // add unreachable terminator to fail assert blocks
+  for (auto *e : failBlocks) {
+    builder.SetInsertPoint(e);
+    builder.CreateUnreachable();
+  }
+
+  // link condition blocks to their fail assert blocks
+  for (size_t i = 0; i < condBlocks.size(); ++i) {
+    builder.SetInsertPoint(condBlocks[i]);
+    // temporarily point to truth branch to the end block
+    builder.CreateCondBr(conditions[i], &EndBlock, failBlocks[i]);
+  }
+
+  // link condition blocks on truth
+  for (size_t i = 1; i < condBlocks.size() - 1; ++i) {
+    auto *br =
+        llvm::dyn_cast<llvm::BranchInst>(condBlocks[i - 1]->getTerminator());
+    br->setSuccessor(0, condBlocks[i]);
+  }
+
+  // hook up start and end blocks
+  builder.SetInsertPoint(&StartBlock);
+  builder.CreateBr(condBlocks.front());
+
+  auto *br =
+      llvm::dyn_cast<llvm::BranchInst>(condBlocks.back()->getTerminator());
+  br->setSuccessor(0, &EndBlock);
 }
 
 void SymbolicEncapsulation::createCall(

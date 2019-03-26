@@ -59,14 +59,14 @@ private:
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs1,
                         llvm::SmallVectorImpl<llvm::Value *> &CallArgs2);
 
-  void createSymbolicDeclarations(llvm::BasicBlock &Block,
-                                  llvm::Function &Func,
+  void createSymbolicDeclarations(llvm::BasicBlock &Block, llvm::Function &Func,
                                   llvm::SmallVectorImpl<llvm::Value *> &Values1,
                                   llvm::SmallVectorImpl<llvm::Value *> &Values2,
                                   IterationsNumTy IterationsNum,
                                   llvm::ArrayRef<ArgSpec> ArgSpecs);
 
-  void createSymbolicAssertions(llvm::BasicBlock &Block,
+  void createSymbolicAssertions(llvm::BasicBlock &StartBlock,
+                                llvm::BasicBlock &EndBlock,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values1,
                                 llvm::SmallVectorImpl<llvm::Value *> &Values2,
                                 IterationsNumTy IterationsNum,
