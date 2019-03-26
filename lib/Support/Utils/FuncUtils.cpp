@@ -59,3 +59,15 @@ llvm::Function *ephippion::DeclareKLEELikeFunc(llvm::Module &M,
                                     true)));
 }
 
+llvm::Function *ephippion::DeclareAssertLikeFunc(llvm::Module &M,
+                                                 llvm::StringRef Name) {
+  auto &curCtx = M.getContext();
+  auto *ptrType = llvm::Type::getInt8PtrTy(curCtx);
+  return llvm::cast<llvm::Function>(M.getOrInsertFunction(
+      Name,
+      llvm::FunctionType::get(
+          llvm::Type::getVoidTy(curCtx),
+          {ptrType, ptrType, llvm::Type::getInt32Ty(M.getContext()), ptrType},
+          false)));
+}
+

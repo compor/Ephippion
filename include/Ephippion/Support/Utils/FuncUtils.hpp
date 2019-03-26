@@ -33,4 +33,6 @@ llvm::Function *DeclareMemcmpLikeFunc(llvm::Module &M, llvm::StringRef Name);
 
 llvm::Function *DeclareKLEELikeFunc(llvm::Module &M, llvm::StringRef Name);
 
+llvm::Function *DeclareAssertLikeFunc(llvm::Module &M, llvm::StringRef Name);
+
 } // namespace ephippion

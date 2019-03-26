@@ -308,13 +308,14 @@ void SymbolicEncapsulation::createSymbolicAssertions(
   assert(Values1.size() && Values2.size() && "Value sets are empty!");
   assert(Values1.size() == Values2.size() && "Value set sizes differ!");
 
-  auto &curM = *Block.getParent()->getParent();
+  auto &curF = *Block.getParent();
+  auto &curM = *curF.getParent();
   auto &dataLayout = curM.getDataLayout();
-
-  auto *assertFunc = DeclareKLEELikeFunc(curM, "klee_assert");
+  auto *assertFunc = DeclareAssertLikeFunc(curM, "__assert_fail");
   auto *memcmpFunc = DeclareKLEELikeFunc(curM, "memcmp");
 
   llvm::IRBuilder<> builder{&Block};
+  auto *funcName = builder.CreateGlobalStringPtr(curF.getName());
 
   for (size_t i = 0; i < Values1.size(); ++i) {
     if (ArgSpecs.size() && !isOutbound(ArgSpecs[i].Direction)) {
@@ -323,7 +324,12 @@ void SymbolicEncapsulation::createSymbolicAssertions(
 
     if (!Values1[i]->getType()->isPointerTy()) {
       auto *cond = builder.CreateICmpEQ(Values1[i], Values2[i]);
-      builder.CreateCall(assertFunc, cond);
+      // builder.CreateCall(assertFunc, cond);
+
+      builder.CreateCall(assertFunc,
+                         {builder.CreateGlobalStringPtr("FAILED"),
+                          builder.CreateGlobalStringPtr(curM.getName()),
+                          builder.getInt32(0), funcName});
     } else {
       size_t typeSize = dataLayout.getTypeAllocSize(
           Values1[i]->getType()->getPointerElementType());
@@ -339,7 +345,11 @@ void SymbolicEncapsulation::createSymbolicAssertions(
       auto *call =
           builder.CreateCall(memcmpFunc, {Values1[i], Values2[i], allocSize});
       auto *cond = builder.CreateICmpEQ(call, builder.getInt32(0));
-      builder.CreateCall(assertFunc, cond);
+
+      builder.CreateCall(assertFunc,
+                         {builder.CreateGlobalStringPtr("FAILED"),
+                          builder.CreateGlobalStringPtr(curM.getName()),
+                          builder.getInt32(0), funcName});
     }
   }
 }
