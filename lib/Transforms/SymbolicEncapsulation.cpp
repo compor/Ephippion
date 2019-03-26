@@ -259,14 +259,14 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
       auto *allocSize =
           builder.CreateMul(builder.getInt64(1), builder.getInt64(typeSize));
 
-      std::string symName =
-          "sym.in." + Values1[argIdx]->getName().str() + std::to_string(argIdx);
+      std::string symName = "sym.in1." + Values1[argIdx]->getName().str() +
+                            std::to_string(argIdx);
       builder.CreateCall(
           symbolizeFunc,
           {Values1[argIdx], allocSize, builder.CreateGlobalStringPtr(symName)});
 
       if (isOutbound(ArgSpecs[argIdx].Direction)) {
-        std::string symName = "sym.in." + Values2[argIdx]->getName().str() +
+        std::string symName = "sym.in2." + Values2[argIdx]->getName().str() +
                               std::to_string(argIdx);
         builder.CreateCall(symbolizeFunc,
                            {Values2[argIdx], allocSize,
@@ -284,14 +284,14 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
       auto *allocSize =
           builder.CreateMul(multiplier, builder.getInt64(typeSize));
 
-      std::string symName =
-          "sym.in." + Values1[argIdx]->getName().str() + std::to_string(argIdx);
+      std::string symName = "sym.in1." + Values1[argIdx]->getName().str() +
+                            std::to_string(argIdx);
       builder.CreateCall(
           symbolizeFunc,
           {Values1[argIdx], allocSize, builder.CreateGlobalStringPtr(symName)});
 
       if (isOutbound(ArgSpecs[argIdx].Direction)) {
-        std::string symName = "sym.in." + Values2[argIdx]->getName().str() +
+        std::string symName = "sym.in2." + Values2[argIdx]->getName().str() +
                               std::to_string(argIdx);
         builder.CreateCall(symbolizeFunc,
                            {Values2[argIdx], allocSize,
