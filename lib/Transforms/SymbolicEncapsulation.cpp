@@ -244,6 +244,7 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
   auto &dataLayout = curM.getDataLayout();
 
   auto *symbolizeFunc = DeclareKLEELikeFunc(curM, "klee_make_symbolic");
+  auto *memcpyFunc = DeclareMemcpyLikeFunc(curM, "memcpy");
 
   llvm::IRBuilder<> builder{&Block};
 
@@ -274,6 +275,9 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
         builder.CreateCall(symbolizeFunc,
                            {Values2[argIdx], allocSize,
                             builder.CreateGlobalStringPtr(symName)});
+
+        builder.CreateCall(memcpyFunc,
+                           {Values2[argIdx], Values1[argIdx], allocSize});
       }
     } else {
       size_t typeSize = dataLayout.getTypeAllocSize(
@@ -299,6 +303,9 @@ void SymbolicEncapsulation::createSymbolicDeclarations(
         builder.CreateCall(symbolizeFunc,
                            {Values2[argIdx], allocSize,
                             builder.CreateGlobalStringPtr(symName)});
+
+        builder.CreateCall(memcpyFunc,
+                           {Values2[argIdx], Values1[argIdx], allocSize});
       }
     }
 
