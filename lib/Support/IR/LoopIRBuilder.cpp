@@ -47,11 +47,11 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
 
   switch (direction) {
   default:
-    builder.CreateCondBr(builder.CreateICmpULT(ind, builder.getInt64(End)),
+    builder.CreateCondBr(builder.CreateICmpSLT(ind, builder.getInt64(End)),
                          Body[0], exit);
     break;
   case LD_Decreasing:
-    builder.CreateCondBr(builder.CreateICmpUGT(ind, builder.getInt64(End)),
+    builder.CreateCondBr(builder.CreateICmpSGE(ind, builder.getInt64(End)),
                          Body[0], exit);
     break;
   }
