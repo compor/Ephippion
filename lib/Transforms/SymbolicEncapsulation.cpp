@@ -133,7 +133,10 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
       loopBuilder.CreateLoop({call2Block}, *call2SetupBlock,
                              *call2TeardownBlock, IterationsNum - 1, 0);
 
-  // TODO save a spot for the iterator to be passed as an argument
+  // pass the iterator as the first argument
+  callArgs1[0] = indVar1;
+  callArgs2[0] = indVar2;
+
   createCall(*call1Block, F, callArgs1);
   createCall(*call2Block, F, callArgs2);
 
