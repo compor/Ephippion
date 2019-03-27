@@ -411,11 +411,15 @@ void SymbolicEncapsulation::createCall(
   auto *funcType = EncapsulatedFunc.getFunctionType();
 
   for (size_t i = 0; i < Args.size(); ++i) {
-    if (llvm::isa<llvm::AllocaInst>(Args[i])) {
-      actualArgs.push_back(builder.CreateLoad(Args[i]));
+    if (Args[i]->getType()->isPointerTy()) {
+      if (llvm::isa<llvm::AllocaInst>(Args[i])) {
+        actualArgs.push_back(builder.CreateLoad(Args[i]));
+      } else {
+        actualArgs.push_back(
+            builder.CreateBitCast(Args[i], funcType->getParamType(i)));
+      }
     } else {
-      actualArgs.push_back(
-          builder.CreateBitCast(Args[i], funcType->getParamType(i)));
+      actualArgs.push_back(Args[i]);
     }
   }
 
