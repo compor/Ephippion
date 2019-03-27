@@ -20,7 +20,7 @@ namespace ephippion {
 
 llvm::Instruction *LoopIRBuilder::CreateLoop(
     llvm::ArrayRef<llvm::BasicBlock *> Body, llvm::BasicBlock &Preheader,
-    llvm::BasicBlock &Postexit, uint64_t Start, uint64_t End, uint64_t Step) {
+    llvm::BasicBlock &Postexit, uint32_t Start, uint32_t End, uint32_t Step) {
   assert(Body.size() && "Body blocks is empty!");
   assert(Start != End && "Loop bounds are equal!");
 
@@ -43,15 +43,15 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
 
   // add induction variable and loop condition
   llvm::IRBuilder<> builder{hdr};
-  auto *ind = builder.CreatePHI(llvm::Type::getInt64Ty(curCtx), 2, "i");
+  auto *ind = builder.CreatePHI(llvm::Type::getInt32Ty(curCtx), 2, "i");
 
   switch (direction) {
   default:
-    builder.CreateCondBr(builder.CreateICmpSLT(ind, builder.getInt64(End)),
+    builder.CreateCondBr(builder.CreateICmpSLT(ind, builder.getInt32(End)),
                          Body[0], exit);
     break;
   case LD_Decreasing:
-    builder.CreateCondBr(builder.CreateICmpSGE(ind, builder.getInt64(End)),
+    builder.CreateCondBr(builder.CreateICmpSGE(ind, builder.getInt32(End)),
                          Body[0], exit);
     break;
   }
@@ -61,17 +61,17 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
   llvm::Value *step = nullptr;
   switch (direction) {
   default:
-    step = builder.CreateAdd(ind, builder.getInt64(Step));
+    step = builder.CreateAdd(ind, builder.getInt32(Step));
     break;
   case LD_Decreasing:
-    step = builder.CreateSub(ind, builder.getInt64(Step));
+    step = builder.CreateSub(ind, builder.getInt32(Step));
     break;
   }
 
   builder.CreateBr(hdr);
 
   // add induction phi inputs
-  ind->addIncoming(builder.getInt64(Start), &Preheader);
+  ind->addIncoming(builder.getInt32(Start), &Preheader);
   ind->addIncoming(step, latch);
 
   // direct all unterminated body blocks to loop latch

@@ -10,7 +10,7 @@
 // using llvm::ArrayRef
 
 #include <cstdint>
-// using uint64_t
+// using uint32_t
 
 namespace llvm {
 class BasicBlock;
@@ -23,8 +23,8 @@ class LoopIRBuilder {
 public:
   llvm::Instruction *CreateLoop(llvm::ArrayRef<llvm::BasicBlock *> Body,
                                 llvm::BasicBlock &Preheader,
-                                llvm::BasicBlock &Postexit, uint64_t Start = 0,
-                                uint64_t End = 10, uint64_t Step = 1);
+                                llvm::BasicBlock &Postexit, uint32_t Start = 0,
+                                uint32_t End = 10, uint32_t Step = 1);
 };
 
 } // namespace ephippion

@@ -33,7 +33,7 @@
 // using std::string
 
 #include <cstdint>
-// using uint64_t
+// using uint32_t
 
 namespace llvm {
 class Module;
