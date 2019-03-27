@@ -31,7 +31,7 @@ llvm::Instruction *LoopIRBuilder::CreateLoop(
 
   LoopDirection direction = LD_Increasing;
   if (Start > End) {
-    LoopDirection direction = LD_Decreasing;
+    direction = LD_Decreasing;
   }
 
   auto *curFunc = Preheader.getParent();
