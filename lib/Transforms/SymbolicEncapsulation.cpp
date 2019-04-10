@@ -30,6 +30,9 @@
 // using DEBUG macro
 // using llvm::dbgs
 
+#include <algorithm>
+// using std::any_of
+
 #include <cstring>
 // using std::to_string
 
@@ -85,6 +88,17 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 
   while (argSpecs.size() < numParams) {
     argSpecs.push_back({ArgDirection::AD_Inbound, false});
+  }
+
+  bool requiresConditions =
+      std::any_of(argSpecs.begin(), argSpecs.end(),
+                  [](const auto &e) { return isOutbound(e.Direction); });
+
+  if (!requiresConditions) {
+    LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
+                            << "since it does not require any conditions\n";);
+
+    return false;
   }
 
   auto &curM = *F.getParent();
