@@ -403,19 +403,24 @@ void SymbolicEncapsulation::createSymbolicAssertions(
   }
 
   // link condition blocks on truth
-  for (size_t i = 1; i < condBlocks.size() - 1; ++i) {
+  for (size_t i = 1; condBlocks.size() && (i < condBlocks.size() - 1); ++i) {
     auto *br =
         llvm::dyn_cast<llvm::BranchInst>(condBlocks[i - 1]->getTerminator());
     br->setSuccessor(0, condBlocks[i]);
   }
 
   // hook up start and end blocks
-  builder.SetInsertPoint(&StartBlock);
-  builder.CreateBr(condBlocks.front());
+  if (!condBlocks.empty()) {
+    builder.SetInsertPoint(&StartBlock);
+    builder.CreateBr(condBlocks.front());
 
-  auto *br =
-      llvm::dyn_cast<llvm::BranchInst>(condBlocks.back()->getTerminator());
-  br->setSuccessor(0, &EndBlock);
+    auto *br =
+        llvm::dyn_cast<llvm::BranchInst>(condBlocks.back()->getTerminator());
+    br->setSuccessor(0, &EndBlock);
+  } else {
+    builder.SetInsertPoint(&StartBlock);
+    builder.CreateBr(&EndBlock);
+  }
 }
 
 void SymbolicEncapsulation::createCall(
