@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib"
+
+FILENAME=${1}
+OUTPUT_FILENAME=${FILENAME%.*}-eph.ll
+
+FUNC=${2}
+ARGSPEC=${3}
+
+[[ -z ${FUNC} ]] && echo "missing func name" && exit 1
+[[ -z ${ARGSPEC} ]] && echo "missing func arg specification" && exit 1
+
+opt \
+  -load ${LIB_DIR}/@PASS_SO_NAME@ \
+  -S \
+  -eph-encapsulate \
+  -eph-iterations=10 \
+  -eph-func-wl=${2} \
+  -eph-argspec=${3} \
+  -debug-only=eph-symenc \
+  -o ${OUTPUT_FILENAME} \
+  ${FILENAME}
+

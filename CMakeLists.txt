@@ -162,10 +162,6 @@ foreach(PRJ_LIB ${PRJ_LIB_NAMES})
   target_compile_definitions(${PRJ_LIB}
     PRIVATE VERSION_STRING=${PRJ_VERSION})
 
-  if(NOT LLVM_ENABLE_EH)
-    target_compile_definitions(${PRJ_LIB} PUBLIC BOOST_NO_EXCEPTIONS)
-  endif()
-
   target_include_directories(${PRJ_LIB} PUBLIC ${LLVM_INCLUDE_DIRS})
   target_include_directories(${PRJ_LIB} PUBLIC ${Boost_INCLUDE_DIRS})
   target_include_directories(${PRJ_LIB} PUBLIC
@@ -239,6 +235,10 @@ set(PRJ_CONFIG_HEADER_FILE "Config.hpp")
 set(PRJ_CMAKE_CONFIG_FILE "config.cmake")
 set(PRJ_CMAKE_CONFIG_EXTRA_FILE "config-extra.cmake")
 
+set(BIN_SCRIPTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/utils/scripts/run/)
+
+set(PASS_SO_NAME ${TRGT_PREFIX}${LIB_NAME}${TRGT_SUFFIX})
+
 set(DEPENDEE "")
 
 install(TARGETS ${LIB_NAME} EXPORT ${EPHIPPION_EXPORT}
@@ -250,7 +250,11 @@ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
 add_custom_target(clean_generated_include
   COMMAND "${CMAKE_COMMAND}" "-E" "remove_directory"
   "${CMAKE_CURRENT_BINARY_DIR}/include")
-add_dependencies(clean_all clean_generated_include)
+add_custom_target(clean_generated_bin
+  COMMAND "${CMAKE_COMMAND}" "-E" "remove_directory"
+  "${CMAKE_CURRENT_BINARY_DIR}/bin")
+add_custom_target(clean-generated
+  DEPENDS clean_generated_include clean_generated_bin)
 
 configure_file(
   "${CMAKE_INSTALL_INCLUDEDIR}/${PRJ_NAME}/${PRJ_CONFIG_HEADER_FILE}.in"
@@ -265,6 +269,18 @@ configure_file(
   "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${PRJ_CMAKE_CONFIG_EXTRA_FILE}.in"
   "${CMAKE_INSTALL_LIBDIR}/cmake/${PRJ_NAME_LOWER}-${PRJ_CMAKE_CONFIG_EXTRA_FILE}"
   @ONLY)
+
+file(GLOB BIN_SCRIPTS LIST_DIRECTORIES FALSE RELATIVE
+  ${BIN_SCRIPTS_DIR}
+  ${BIN_SCRIPTS_DIR}/*.sh.in)
+
+foreach(BIN_SCRIPT_TEMPLATE ${BIN_SCRIPTS})
+  get_filename_component(BIN_SCRIPT ${BIN_SCRIPT_TEMPLATE} NAME_WE)
+  configure_file(
+    "${BIN_SCRIPTS_DIR}/${BIN_SCRIPT_TEMPLATE}"
+    "${CMAKE_INSTALL_BINDIR}/${BIN_SCRIPT}.sh"
+    @ONLY)
+endforeach()
 
 write_basic_package_version_file(
   "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${PRJ_NAME_LOWER}-config-version.cmake"
@@ -282,6 +298,10 @@ install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/share/"
 
 install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib/cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/"
+  DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  USE_SOURCE_PERMISSIONS)
 
 #
 
