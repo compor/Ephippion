@@ -10,6 +10,7 @@
 // using llvm::cl::desc
 // using llvm::cl::location
 // using llvm::cl::cat
+// using llvm::cl::CommaSeparated
 // using llvm::cl::OptionCategory
 
 #include <string>
@@ -26,10 +27,11 @@ llvm::cl::opt<ephippion::SymbolicEncapsulation::IterationsNumTy>
 llvm::cl::list<std::string>
     FunctionWhiteList("eph-func-wl", llvm::cl::Hidden,
                       llvm::cl::desc("process only the specified functions"),
+                      llvm::cl::CommaSeparated,
                       llvm::cl::cat(EphippionCLCategory));
 
 llvm::cl::list<ephippion::ArgSpec>
     ArgSpecs("eph-argspec", llvm::cl::Hidden,
              llvm::cl::desc("use this argspec to process function arguments"),
-             llvm::cl::cat(EphippionCLCategory));
+             llvm::cl::CommaSeparated, llvm::cl::cat(EphippionCLCategory));
 
