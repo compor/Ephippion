@@ -59,10 +59,6 @@ bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
 bool SymbolicEncapsulation::encapsulate(llvm::Function &F,
                                         IterationsNumTy IterationsNum,
                                         llvm::ArrayRef<ArgSpec> ArgSpecs) {
-  // either argspec information must match func args or be empty
-  assert((ArgSpecs.size() == 0 || F.arg_size() == ArgSpecs.size()) &&
-         "Missing argspec information for function arguments!");
-
   return encapsulateImpl(F, IterationsNum, ArgSpecs);
 }
 
@@ -74,6 +70,22 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   }
 
   LLVM_DEBUG(llvm::dbgs() << "processing func: " << F.getName() << '\n';);
+
+  llvm::SmallVector<ArgSpec, 16> argSpecs;
+  auto numParams = F.getFunctionType()->getNumParams();
+  argSpecs.reserve(numParams);
+
+  argSpecs.insert(argSpecs.begin(), ArgSpecs.begin(), ArgSpecs.end());
+
+  LLVM_DEBUG({
+    if (argSpecs.size() < numParams) {
+      llvm::dbgs() << "filling in missing arg spec with default\n";
+    }
+  });
+
+  while (argSpecs.size() < numParams) {
+    argSpecs.push_back({ArgDirection::AD_Inbound, false});
+  }
 
   auto &curM = *F.getParent();
   auto *encapsulatedFunc = curM.getFunction(F.getName());
@@ -114,13 +126,13 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
       llvm::BasicBlock::Create(curM.getContext(), "exit", harnessFunc);
 
   llvm::SmallVector<llvm::Value *, 8> callArgs1, callArgs2;
-  setupHarnessArgs(F, ArgSpecs, *setupBlock, *teardownBlock, IterationsNum,
+  setupHarnessArgs(F, argSpecs, *setupBlock, *teardownBlock, IterationsNum,
                    callArgs1, callArgs2);
 
   createSymbolicDeclarations(*seSetupBlock, F, callArgs1, callArgs2,
-                             IterationsNum, ArgSpecs);
+                             IterationsNum, argSpecs);
   createSymbolicAssertions(*seStartTeardownBlock, *seEndTeardownBlock,
-                           callArgs1, callArgs2, IterationsNum, ArgSpecs);
+                           callArgs1, callArgs2, IterationsNum, argSpecs);
 
   llvm::IRBuilder<> builder{curCtx};
 
