@@ -32,6 +32,6 @@ llvm::cl::list<std::string>
 
 llvm::cl::list<ephippion::ArgSpec>
     ArgSpecs("eph-argspec", llvm::cl::Hidden,
-             llvm::cl::desc("use this argspec to process function arguments"),
+             llvm::cl::desc("specify function argument specifications"),
              llvm::cl::CommaSeparated, llvm::cl::cat(EphippionCLCategory));
 
