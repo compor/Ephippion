@@ -112,7 +112,7 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 
   std::string harnessName = HarnessNamePrefix.str() + F.getName().str();
   auto *harnessFunc =
-      DeclareFunc(curM, harnessName, llvm::Type::getVoidTy(curCtx));
+      DeclareFunc(curM, harnessName, llvm::Type::getInt32Ty(curCtx));
 
   auto *setupBlock =
       llvm::BasicBlock::Create(curM.getContext(), "setup", harnessFunc);
@@ -183,7 +183,8 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 
   // set harness return
   builder.SetInsertPoint(exitBlock);
-  builder.CreateRetVoid();
+  builder.CreateRet(
+      llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder.getContext()), 0));
 
   return true;
 }
