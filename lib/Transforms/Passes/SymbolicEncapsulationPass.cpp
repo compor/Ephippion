@@ -8,6 +8,8 @@
 
 #include "Ephippion/Debug.hpp"
 
+#include "Ephippion/Exchange/JSONTransfer.hpp"
+
 #include "Ephippion/Support/IR/ArgSpec.hpp"
 
 #include "Ephippion/Transforms/Passes/SymbolicEncapsulationPass.hpp"
@@ -31,6 +33,9 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 // using llvm::PassManagerBuilder
 // using llvm::RegisterStandardPasses
+
+#include "llvm/ADT/SmallVector.h"
+// using llvm::SmallVector
 
 #include "llvm/Support/CommandLine.h"
 // using llvm::cl::opt
@@ -95,8 +100,11 @@ SymbolicEncapsulationPass::SymbolicEncapsulationPass() {
 bool SymbolicEncapsulationPass::run(llvm::Module &M) {
   bool hasChanged = false;
   SymbolicEncapsulation senc;
+  llvm::SmallVector<ArgSpec, 16> argSpecs;
 
   for (auto &func : M) {
+    argSpecs.clear();
+
     if (FunctionWhiteList.size()) {
       auto found = std::find(FunctionWhiteList.begin(), FunctionWhiteList.end(),
                              std::string{func.getName()});
@@ -106,7 +114,26 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
       }
     }
 
-    hasChanged |= senc.encapsulate(func, IterationsNum, ArgSpecs);
+    if (JSONDescriptionFilename.size()) {
+      auto v = ReadJSONFromFile(JSONDescriptionFilename);
+
+      if (v.getAsObject()->getString("func") != func.getName()) {
+        continue;
+      }
+
+      auto *asa = v.getAsObject()->getObject("args")->getArray("argspecs");
+      for (auto &e : *asa) {
+        ArgSpec as;
+        llvm::json::fromJSON(e, as);
+        argSpecs.push_back(as);
+      }
+    } else {
+      for (auto &e : ArgSpecs) {
+        argSpecs.push_back(e);
+      }
+    }
+
+    hasChanged |= senc.encapsulate(func, IterationsNum, argSpecs);
   }
 
   return hasChanged;

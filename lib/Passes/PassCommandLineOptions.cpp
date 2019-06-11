@@ -35,3 +35,7 @@ llvm::cl::list<ephippion::ArgSpec>
              llvm::cl::desc("specify function argument specifications"),
              llvm::cl::CommaSeparated, llvm::cl::cat(EphippionCLCategory));
 
+llvm::cl::opt<std::string>
+    JSONDescriptionFilename("eph-argspec-json", llvm::cl::Hidden,
+                            llvm::cl::desc("parse arg specs from JSON file"),
+                            llvm::cl::cat(EphippionCLCategory));

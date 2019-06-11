@@ -130,6 +130,7 @@ set(LIB_SOURCES
   "lib/Passes/RegisterPasses.cpp"
   "lib/Support/Utils/FuncUtils.cpp"
   "lib/Support/IR/LoopIRBuilder.cpp"
+  "lib/Exchange/JSONTransfer.cpp"
   "lib/Transforms/SymbolicEncapsulation.cpp"
   "lib/Transforms/Passes/SymbolicEncapsulationPass.cpp"
   )

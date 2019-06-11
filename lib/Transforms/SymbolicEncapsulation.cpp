@@ -96,7 +96,7 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
 
   if (!requiresConditions) {
     LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
-                            << "since it does not require any conditions\n";);
+                            << " since it does not require any conditions\n";);
 
     return false;
   }
