@@ -20,6 +20,9 @@
 #include "llvm/IR/IRBuilder.h"
 // using llvm::IRBuilder
 
+#include "llvm/IR/Instructions.h"
+// using llvm::CreateZExtOrBitcast
+
 #include "llvm/ADT/iterator_range.h"
 // using llvm::make_range
 
@@ -461,7 +464,14 @@ void SymbolicEncapsulation::createCall(
             builder.CreateBitCast(Args[i], funcType->getParamType(i)));
       }
     } else {
-      actualArgs.push_back(Args[i]);
+      llvm::Value *arg = Args[i];
+
+      if (funcType->getParamType(i) != arg->getType()) {
+        arg =
+            llvm::CastInst::CreateZExtOrBitCast(arg, funcType->getParamType(i));
+      }
+
+      actualArgs.push_back(arg);
     }
   }
 
