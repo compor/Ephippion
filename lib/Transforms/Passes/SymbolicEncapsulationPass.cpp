@@ -51,6 +51,9 @@
 #include <algorithm>
 // using std::find
 
+#include <fstream>
+// using std::ifstream
+
 #include <iterator>
 // using std::begin
 // using std::end
@@ -98,26 +101,47 @@ SymbolicEncapsulationPass::SymbolicEncapsulationPass() {
 }
 
 bool SymbolicEncapsulationPass::run(llvm::Module &M) {
-  bool hasChanged = false;
   SymbolicEncapsulation senc;
   llvm::SmallVector<ArgSpec, 16> argSpecs;
+  llvm::SmallVector<llvm::Function *, 32> workList;
+  workList.reserve(M.size());
 
-  for (auto &func : M) {
-    argSpecs.clear();
+  auto not_in = [](const auto &C, const auto &E) {
+    return C.end() == std::find(std::begin(C), std::end(C), E);
+  };
 
-    if (FunctionWhiteList.size()) {
-      auto found = std::find(FunctionWhiteList.begin(), FunctionWhiteList.end(),
-                             std::string{func.getName()});
+  llvm::SmallVector<std::string, 32> FunctionWhiteList;
 
-      if (found == FunctionWhiteList.end()) {
-        continue;
-      }
+  if (EphippionFunctionWhiteListFile.getPosition()) {
+    std::ifstream wlFile{EphippionFunctionWhiteListFile};
+
+    std::string funcName;
+    while (wlFile >> funcName) {
+      FunctionWhiteList.push_back(funcName);
     }
+  }
+
+  for (auto &F : M) {
+    if (F.isDeclaration() ||
+        (EphippionFunctionWhiteListFile.getPosition() &&
+         not_in(FunctionWhiteList, std::string{F.getName()}))) {
+      continue;
+    }
+
+    workList.push_back(&F);
+  }
+
+  bool hasChanged = false;
+  while (!workList.empty()) {
+    argSpecs.clear();
+    auto &F = *workList.pop_back_val();
+
+    LLVM_DEBUG(llvm::dbgs() << "processing func: " << F.getName() << '\n';);
 
     if (JSONDescriptionFilename.size()) {
       auto v = ReadJSONFromFile(JSONDescriptionFilename);
 
-      if (v.getAsObject()->getString("func") != func.getName()) {
+      if (v.getAsObject()->getString("func") != F.getName()) {
         continue;
       }
 
@@ -133,7 +157,7 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
       }
     }
 
-    hasChanged |= senc.encapsulate(func, IterationsNum, argSpecs);
+    hasChanged |= senc.encapsulate(F, IterationsNum, argSpecs);
   }
 
   return hasChanged;

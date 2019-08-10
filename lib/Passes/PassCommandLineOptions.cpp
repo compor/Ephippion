@@ -24,12 +24,6 @@ llvm::cl::opt<ephippion::SymbolicEncapsulation::IterationsNumTy>
                   llvm::cl::desc("num of iterations for heap allocations"),
                   llvm::cl::init(1), llvm::cl::cat(EphippionCLCategory));
 
-llvm::cl::list<std::string>
-    FunctionWhiteList("eph-func-wl", llvm::cl::Hidden,
-                      llvm::cl::desc("process only the specified functions"),
-                      llvm::cl::CommaSeparated,
-                      llvm::cl::cat(EphippionCLCategory));
-
 llvm::cl::list<ephippion::ArgSpec>
     ArgSpecs("eph-argspec", llvm::cl::Hidden,
              llvm::cl::desc("specify function argument specifications"),
@@ -39,3 +33,9 @@ llvm::cl::opt<std::string>
     JSONDescriptionFilename("eph-argspec-json", llvm::cl::Hidden,
                             llvm::cl::desc("parse arg specs from JSON file"),
                             llvm::cl::cat(EphippionCLCategory));
+
+llvm::cl::opt<std::string> EphippionFunctionWhiteListFile(
+    "eph-func-wl-file", llvm::cl::Hidden,
+    llvm::cl::desc("process only the specified functions"),
+    llvm::cl::cat(EphippionCLCategory));
+

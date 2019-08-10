@@ -21,9 +21,8 @@ extern llvm::cl::OptionCategory EphippionCLCategory;
 extern llvm::cl::opt<ephippion::SymbolicEncapsulation::IterationsNumTy>
     IterationsNum;
 
-extern llvm::cl::list<std::string> FunctionWhiteList;
-
 extern llvm::cl::opt<std::string> JSONDescriptionFilename;
 
 extern llvm::cl::list<ephippion::ArgSpec> ArgSpecs;
 
+extern llvm::cl::opt<std::string> EphippionFunctionWhiteListFile;
