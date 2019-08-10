@@ -90,7 +90,7 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   });
 
   while (argSpecs.size() < numParams) {
-    argSpecs.push_back({ArgDirection::AD_Inbound, false});
+    argSpecs.push_back({"", ArgDirection::AD_Inbound, false});
   }
 
   bool requiresConditions =
