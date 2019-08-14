@@ -23,6 +23,8 @@ extern llvm::cl::opt<ephippion::SymbolicEncapsulation::IterationsNumTy>
 
 extern llvm::cl::opt<std::string> JSONDescriptionFilename;
 
+extern llvm::cl::opt<std::string> EphippionReportsDir;
+
 extern llvm::cl::list<ephippion::ArgSpec> ArgSpecs;
 
 extern llvm::cl::opt<std::string> EphippionFunctionWhiteListFile;

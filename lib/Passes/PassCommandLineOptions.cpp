@@ -30,6 +30,11 @@ llvm::cl::list<ephippion::ArgSpec>
              llvm::cl::CommaSeparated, llvm::cl::cat(EphippionCLCategory));
 
 llvm::cl::opt<std::string>
+    EphippionReportsDir("eph-reports-dir",
+                        llvm::cl::desc("output reports directory"),
+                        llvm::cl::cat(EphippionCLCategory));
+
+llvm::cl::opt<std::string>
     JSONDescriptionFilename("eph-argspec-json", llvm::cl::Hidden,
                             llvm::cl::desc("parse arg specs from JSON file"),
                             llvm::cl::cat(EphippionCLCategory));

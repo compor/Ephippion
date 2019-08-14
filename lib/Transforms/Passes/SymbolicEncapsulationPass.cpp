@@ -139,9 +139,20 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
     LLVM_DEBUG(llvm::dbgs() << "processing func: " << F.getName() << '\n';);
 
     if (JSONDescriptionFilename.size()) {
-      auto v = ReadJSONFromFile(JSONDescriptionFilename);
+      auto valOrError =
+          ReadJSONFromFile(JSONDescriptionFilename, EphippionReportsDir);
+
+      if (!valOrError) {
+        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
+                                << " reason: no description file\n";);
+        continue;
+      }
+
+      auto &v = *valOrError;
 
       if (v.getAsObject()->getString("func") != F.getName()) {
+        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
+                                << " reason: func name mismatch\n";);
         continue;
       }
 
@@ -152,6 +163,9 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
         argSpecs.push_back(as);
       }
     } else {
+      // TODO maybe enforce incompatibility of cmd line arguments instead of
+      // silently clearing them
+      argSpecs.clear();
       for (auto &e : ArgSpecs) {
         argSpecs.push_back(e);
       }

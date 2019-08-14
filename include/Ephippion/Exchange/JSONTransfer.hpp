@@ -18,12 +18,16 @@
 // using json::Object
 // using json::Array
 
+#include "llvm/Support/Error.h"
+// using llvm::Expected
+
 namespace ephippion {
 
 void WriteJSONToFile(const llvm::json::Value &V,
                      const llvm::Twine &FilenamePrefix, const llvm::Twine &Dir);
 
-llvm::json::Value ReadJSONFromFile(const llvm::Twine &Filename);
+llvm::Expected<llvm::json::Value>
+ReadJSONFromFile(const llvm::Twine &FilenamePrefix, const llvm::Twine &Dir);
 
 } // namespace ephippion
 
