@@ -5,17 +5,17 @@ LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../lib"
 FILENAME=${1}
 OUTPUT_FILENAME=${FILENAME%.*}-eph.ll
 
-ARGSPEC_FILE=${2}
+REPORTS_DIR=${2}
 
-[[ -z ${ARGSPEC_FILE} ]] && echo "missing func arg specification file" && exit 1
+[[ -z ${REPORTS_DIR} ]] && echo "missing func arg specification file" && exit 1
 
 opt \
   -load ${LIB_DIR}/@PASS_SO_NAME@ \
   -S \
   -eph-encapsulate \
   -eph-iterations=10 \
-  -eph-argspec-json=${ARGSPEC_FILE} \
-  -debug-only=eph-symenc \
+  -eph-reports-dir=${REPORTS_DIR} \
+  -debug-only=eph-encapsulate \
   -o ${OUTPUT_FILENAME} \
   ${FILENAME}
 
