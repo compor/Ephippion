@@ -66,16 +66,29 @@ void WriteJSONToFile(const llvm::json::Value &V,
   llvm::errs() << " done. \n";
 }
 
-llvm::Expected<llvm::json::Value>
+llvm::ErrorOr<llvm::json::Value>
 ReadJSONFromFile(const llvm::Twine &FilenamePrefix, const llvm::Twine &Dir) {
   std::string absFilename{Dir.str() + "/" + FilenamePrefix.str() + ".json"};
   llvm::StringRef filename{llvm::sys::path::filename(absFilename)};
-  std::ifstream f(filename);
+  std::ifstream f;
+  std::string str;
 
-  std::string str((std::istreambuf_iterator<char>(f)),
-                  std::istreambuf_iterator<char>());
+  f.open(filename, std::ifstream::in);
+  if (f) {
+    str = std::string((std::istreambuf_iterator<char>(f)),
+                      std::istreambuf_iterator<char>());
+  } else {
+    return std::make_error_code(std::io_errc::stream);
+  }
 
-  return llvm::json::parse(str);
+  auto vOrError = llvm::json::parse(str);
+
+  if (auto e = vOrError.takeError()) {
+    llvm::dbgs() << e;
+    return llvm::errorToErrorCode(std::move(e));
+  }
+
+  return *vOrError;
 }
 
 } // namespace ephippion

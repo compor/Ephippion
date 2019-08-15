@@ -143,8 +143,9 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
           ReadJSONFromFile(JSONDescriptionFilename, EphippionReportsDir);
 
       if (!valOrError) {
-        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
-                                << " reason: no description file\n";);
+        LLVM_DEBUG(llvm::dbgs()
+                       << "skipping func: " << F.getName()
+                       << " reason: could not read description file\n";);
         continue;
       }
 
