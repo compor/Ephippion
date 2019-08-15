@@ -30,8 +30,13 @@ llvm::cl::list<ephippion::ArgSpec>
              llvm::cl::CommaSeparated, llvm::cl::cat(EphippionCLCategory));
 
 llvm::cl::opt<std::string>
-    EphippionReportsDir("eph-reports-dir",
-                        llvm::cl::desc("output reports directory"),
+    EphippionReportPrefix("eph-report-prefix", llvm::cl::init("lpc."),
+                          llvm::cl::desc("reports prefix"),
+                          llvm::cl::cat(EphippionCLCategory));
+
+llvm::cl::opt<std::string>
+    EphippionReportsDir("eph-reports-dir", llvm::cl::init(""),
+                        llvm::cl::desc("reports directory"),
                         llvm::cl::cat(EphippionCLCategory));
 
 llvm::cl::opt<std::string>

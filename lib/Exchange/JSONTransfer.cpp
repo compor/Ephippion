@@ -66,22 +66,26 @@ void WriteJSONToFile(const llvm::json::Value &V,
   llvm::errs() << " done. \n";
 }
 
-llvm::ErrorOr<llvm::json::Value>
-ReadJSONFromFile(const llvm::Twine &FilenamePrefix, const llvm::Twine &Dir) {
-  std::string absFilename{Dir.str() + "/" + FilenamePrefix.str() + ".json"};
+llvm::ErrorOr<llvm::json::Value> ReadJSONFromFile(const llvm::Twine &Filename,
+                                                  const llvm::Twine &Dir) {
+  std::string absFilename{Dir.str()};
+  if (absFilename != "") {
+    absFilename += std::string{"/"};
+  }
+  absFilename += std::string{Filename.str()};
+
   llvm::StringRef filename{llvm::sys::path::filename(absFilename)};
   std::ifstream f;
-  std::string str;
 
   f.open(filename, std::ifstream::in);
-  if (f) {
-    str = std::string((std::istreambuf_iterator<char>(f)),
-                      std::istreambuf_iterator<char>());
-  } else {
+  if (!f.is_open()) {
     return std::make_error_code(std::io_errc::stream);
   }
 
+  std::string str{std::istreambuf_iterator<char>(f),
+                  std::istreambuf_iterator<char>()};
   auto vOrError = llvm::json::parse(str);
+  f.close();
 
   if (auto e = vOrError.takeError()) {
     llvm::dbgs() << e;

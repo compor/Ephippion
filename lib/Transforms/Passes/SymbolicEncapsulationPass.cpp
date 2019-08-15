@@ -101,6 +101,10 @@ SymbolicEncapsulationPass::SymbolicEncapsulationPass() {
 }
 
 bool SymbolicEncapsulationPass::run(llvm::Module &M) {
+  if (!JSONDescriptionFilename.size() and !EphippionReportsDir.size()) {
+    return false;
+  }
+
   SymbolicEncapsulation senc;
   llvm::SmallVector<ArgSpec, 16> argSpecs;
   llvm::SmallVector<llvm::Function *, 32> workList;
@@ -138,9 +142,12 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
 
     LLVM_DEBUG(llvm::dbgs() << "processing func: " << F.getName() << '\n';);
 
-    if (JSONDescriptionFilename.size()) {
+    // TODO handle list of json files in JSONDescriptionFilename
+
+    if (EphippionReportsDir.size()) {
       auto valOrError =
-          ReadJSONFromFile(JSONDescriptionFilename, EphippionReportsDir);
+          ReadJSONFromFile(EphippionReportsDir + "/" + EphippionReportPrefix +
+                           F.getName() + ".json");
 
       if (!valOrError) {
         LLVM_DEBUG(llvm::dbgs()
@@ -162,13 +169,6 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
         ArgSpec as;
         llvm::json::fromJSON(e, as);
         argSpecs.push_back(as);
-      }
-    } else {
-      // TODO maybe enforce incompatibility of cmd line arguments instead of
-      // silently clearing them
-      argSpecs.clear();
-      for (auto &e : ArgSpecs) {
-        argSpecs.push_back(e);
       }
     }
 
