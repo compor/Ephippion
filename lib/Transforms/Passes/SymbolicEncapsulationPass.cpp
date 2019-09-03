@@ -150,9 +150,11 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
                            F.getName() + ".json");
 
       if (!valOrError) {
-        LLVM_DEBUG(llvm::dbgs()
-                       << "skipping func: " << F.getName()
-                       << " reason: could not read description file\n";);
+        if (valOrError.getError() != std::errc::no_such_file_or_directory) {
+          LLVM_DEBUG(llvm::dbgs()
+                         << "skipping func: " << F.getName()
+                         << " reason: could not read description file\n";);
+        }
         continue;
       }
 

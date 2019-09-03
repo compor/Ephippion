@@ -39,6 +39,11 @@
 #include <system_error>
 // using std::error_code
 
+#if defined(__unix__) && defined(_POSIX_C_SOURCE)
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
 namespace ephippion {
 
 void WriteJSONToFile(const llvm::json::Value &V,
@@ -79,6 +84,15 @@ llvm::ErrorOr<llvm::json::Value> ReadJSONFromFile(const llvm::Twine &Filename,
 
   f.open(filename, std::ifstream::in);
   if (!f.is_open()) {
+#if defined(__unix__) && defined(_POSIX_C_SOURCE)
+    struct stat info;
+    int rc = stat(filename.data(), &info);
+
+    if (rc && errno == ENOENT) {
+      return std::make_error_code(std::errc::no_such_file_or_directory);
+    }
+#endif
+
     return std::make_error_code(std::io_errc::stream);
   }
 
@@ -88,7 +102,6 @@ llvm::ErrorOr<llvm::json::Value> ReadJSONFromFile(const llvm::Twine &Filename,
   f.close();
 
   if (auto e = vOrError.takeError()) {
-    llvm::dbgs() << e;
     return llvm::errorToErrorCode(std::move(e));
   }
 
