@@ -126,9 +126,14 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
   }
 
   for (auto &F : M) {
-    if (F.isDeclaration() ||
-        (EphippionFunctionWhiteListFile.getPosition() &&
-         not_in(FunctionWhiteList, std::string{F.getName()}))) {
+    if (F.isDeclaration()) {
+      continue;
+    }
+
+    if (EphippionFunctionWhiteListFile.getPosition() &&
+        not_in(FunctionWhiteList, std::string{F.getName()})) {
+      LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
+                              << " reason: not in whitelist\n";);
       continue;
     }
 
@@ -150,11 +155,14 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
                            F.getName() + ".json");
 
       if (!valOrError) {
+        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName());
         if (valOrError.getError() != std::errc::no_such_file_or_directory) {
           LLVM_DEBUG(llvm::dbgs()
-                         << "skipping func: " << F.getName()
                          << " reason: could not read description file\n";);
         }
+
+        LLVM_DEBUG(llvm::dbgs() << " reason: could not open file\n";);
+
         continue;
       }
 
@@ -174,7 +182,11 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
       }
     }
 
-    hasChanged |= senc.encapsulate(F, IterationsNum, argSpecs);
+    if (senc.encapsulate(F, IterationsNum, argSpecs)) {
+      hasChanged = true;
+      LLVM_DEBUG(llvm::dbgs()
+                     << "encapsulating func: " << F.getName() << '\n';);
+    }
   }
 
   return hasChanged;
