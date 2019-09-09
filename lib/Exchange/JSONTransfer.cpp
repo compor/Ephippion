@@ -82,7 +82,7 @@ llvm::ErrorOr<llvm::json::Value> ReadJSONFromFile(const llvm::Twine &Filename,
   llvm::StringRef filename{llvm::sys::path::filename(absFilename)};
   std::ifstream f;
 
-  f.open(filename, std::ifstream::in);
+  f.open(absFilename, std::ifstream::in);
   if (!f.is_open()) {
 #if defined(__unix__) && defined(_POSIX_C_SOURCE)
     struct stat info;
