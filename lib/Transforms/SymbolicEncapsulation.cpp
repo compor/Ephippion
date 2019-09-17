@@ -421,7 +421,7 @@ void SymbolicEncapsulation::createSymbolicAssertions(
   }
 
   // link condition blocks on truth
-  for (size_t i = 1; condBlocks.size() && (i < condBlocks.size() - 1); ++i) {
+  for (size_t i = 1; condBlocks.size() && (i <= condBlocks.size() - 1); ++i) {
     auto *br =
         llvm::dyn_cast<llvm::BranchInst>(condBlocks[i - 1]->getTerminator());
     br->setSuccessor(0, condBlocks[i]);
