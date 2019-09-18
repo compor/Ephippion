@@ -44,6 +44,15 @@
 // using llvm::cl::ParseEnvironmentOptions
 // using llvm::cl::ResetAllOptionOccurrences
 
+#include "llvm/Support/FileSystem.h"
+// using llvm::sys::fs::basic_file_status
+// using llvm::sys::fs::directory_iterator
+// using llvm::sys::fs::exists
+
+#include "llvm/Support/Path.h"
+// using llvm::sys::path::native
+// using llvm::sys::path::filename
+
 #include "llvm/Support/Debug.h"
 // using LLVM_DEBUG macro
 // using llvm::dbgs
@@ -101,8 +110,10 @@ SymbolicEncapsulationPass::SymbolicEncapsulationPass() {
 }
 
 bool SymbolicEncapsulationPass::run(llvm::Module &M) {
+  bool hasChanged = false;
+
   if (!JSONDescriptionFilename.size() and !EphippionReportsDir.size()) {
-    return false;
+    return hasChanged;
   }
 
   SymbolicEncapsulation senc;
@@ -140,36 +151,53 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
     workList.push_back(&F);
   }
 
-  bool hasChanged = false;
-  while (!workList.empty()) {
-    argSpecs.clear();
-    auto &F = *workList.pop_back_val();
+  if (!workList.empty() && EphippionReportsDir.size() &&
+      llvm::sys::fs::exists(EphippionReportsDir)) {
 
-    LLVM_DEBUG(llvm::dbgs() << "processing func: " << F.getName() << '\n';);
+    std::error_code EC;
+    llvm::SmallString<128> ReportsPathNative;
+    llvm::sys::path::native(EphippionReportsDir, ReportsPathNative);
+    // walk all of the files within this directory.
+    for (llvm::sys::fs::directory_iterator File(ReportsPathNative, EC), FileEnd;
+         File != FileEnd && !EC; File.increment(EC)) {
+      if (!llvm::sys::path::filename(File->path())
+               .startswith(EphippionReportPrefix) ||
+          !llvm::sys::path::filename(File->path()).endswith(".json")) {
+        continue;
+      }
 
-    // TODO handle list of json files in JSONDescriptionFilename
+      // if we can't stat it, there's nothing interesting there
+      llvm::ErrorOr<llvm::sys::fs::basic_file_status> StatusOrErr =
+          File->status();
+      if (!StatusOrErr) {
+        LLVM_DEBUG(llvm::dbgs() << "ignore " << File->path()
+                                << " reason: cannot stat\n";);
+        continue;
+      }
 
-    if (EphippionReportsDir.size()) {
-      auto valOrError =
-          ReadJSONFromFile(EphippionReportsDir + "/" + EphippionReportPrefix +
-                           F.getName() + ".json");
+      argSpecs.clear();
+      auto filename = llvm::sys::path::filename(File->path());
+      llvm::dbgs() << filename << '\n';
+      auto valOrError = ReadJSONFromFile(filename, EphippionReportsDir);
 
       if (!valOrError) {
-        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName());
+        LLVM_DEBUG(llvm::dbgs() << "skipping file: " << filename;);
         if (valOrError.getError() != std::errc::no_such_file_or_directory) {
           LLVM_DEBUG(llvm::dbgs()
                          << " reason: could not read description file\n";);
         }
-
         LLVM_DEBUG(llvm::dbgs() << " reason: could not open file\n";);
-
         continue;
       }
 
       auto &v = *valOrError;
 
-      if (v.getAsObject()->getString("func") != F.getName()) {
-        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << F.getName()
+      auto funcName = v.getAsObject()->getString("func");
+      auto *F = M.getFunction(*funcName);
+
+      auto found = std::find(workList.begin(), workList.end(), F);
+      if (!F || found == workList.end()) {
+        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << *funcName
                                 << " reason: func name mismatch\n";);
         continue;
       }
@@ -180,12 +208,12 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
         llvm::json::fromJSON(e, as);
         argSpecs.push_back(as);
       }
-    }
 
-    if (senc.encapsulate(F, IterationsNum, argSpecs)) {
-      hasChanged = true;
-      LLVM_DEBUG(llvm::dbgs()
-                     << "encapsulating func: " << F.getName() << '\n';);
+      if (senc.encapsulate(*F, IterationsNum, argSpecs)) {
+        hasChanged = true;
+        LLVM_DEBUG(llvm::dbgs()
+                       << "encapsulating func: " << F->getName() << '\n';);
+      }
     }
   }
 
