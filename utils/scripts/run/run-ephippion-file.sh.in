@@ -16,6 +16,7 @@ opt \
   -eph-iterations=10 \
   -eph-reports-dir=${REPORTS_DIR} \
   -debug-only=eph-encapsulate \
+  -debug-only=eph-symenc \
   -o ${OUTPUT_FILENAME} \
   ${FILENAME}
 
