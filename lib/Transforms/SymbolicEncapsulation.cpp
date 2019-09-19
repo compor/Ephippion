@@ -454,6 +454,8 @@ void SymbolicEncapsulation::createCall(
 
   llvm::SmallVector<llvm::Value *, 8> actualArgs;
   auto *funcType = EncapsulatedFunc.getFunctionType();
+  LLVM_DEBUG(llvm::dbgs() << "creating call to func type: " << *funcType
+                          << '\n';);
 
   for (size_t i = 0; i < Args.size(); ++i) {
     if (Args[i]->getType()->isPointerTy()) {
@@ -467,6 +469,8 @@ void SymbolicEncapsulation::createCall(
       llvm::Value *arg = Args[i];
 
       if (funcType->getParamType(i) != arg->getType()) {
+        LLVM_DEBUG(llvm::dbgs() << "casting arg " << i << ": " << *arg << " to "
+                                << *funcType->getParamType(i) << '\n';);
         arg =
             llvm::CastInst::CreateZExtOrBitCast(arg, funcType->getParamType(i));
       }

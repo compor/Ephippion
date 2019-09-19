@@ -177,7 +177,6 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
 
       argSpecs.clear();
       auto filename = llvm::sys::path::filename(File->path());
-      llvm::dbgs() << filename << '\n';
       auto valOrError = ReadJSONFromFile(filename, EphippionReportsDir);
 
       if (!valOrError) {
