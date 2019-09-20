@@ -59,6 +59,7 @@
 
 #include <algorithm>
 // using std::find
+// using std::any_of
 
 #include <fstream>
 // using std::ifstream
@@ -206,6 +207,16 @@ bool SymbolicEncapsulationPass::run(llvm::Module &M) {
         ArgSpec as;
         llvm::json::fromJSON(e, as);
         argSpecs.push_back(as);
+      }
+
+      bool requiresConditions =
+          std::any_of(argSpecs.begin(), argSpecs.end(),
+                      [](const auto &e) { return isOutbound(e.Direction); });
+
+      if (!requiresConditions && !ForceEncapsulation) {
+        LLVM_DEBUG(llvm::dbgs() << "skipping func: " << *funcName
+                                << " reason: no conditions required\n";);
+        continue;
       }
 
       if (senc.encapsulate(*F, IterationsNum, argSpecs)) {

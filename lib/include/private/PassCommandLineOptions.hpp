@@ -18,6 +18,8 @@
 
 extern llvm::cl::OptionCategory EphippionCLCategory;
 
+extern llvm::cl::opt<bool> ForceEncapsulation;
+
 extern llvm::cl::opt<ephippion::SymbolicEncapsulation::IterationsNumTy>
     IterationsNum;
 

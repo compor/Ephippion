@@ -19,6 +19,12 @@
 llvm::cl::OptionCategory EphippionCLCategory("Ephipion Pass",
                                              "Options for Ephippion pass");
 
+llvm::cl::opt<bool>
+    ForceEncapsulation("eph-force-encapsulation", llvm::cl::Hidden,
+                       llvm::cl::desc("force function encapsulation"),
+                       llvm::cl::init(false),
+                       llvm::cl::cat(EphippionCLCategory));
+
 llvm::cl::opt<ephippion::SymbolicEncapsulation::IterationsNumTy>
     IterationsNum("eph-iterations", llvm::cl::Hidden,
                   llvm::cl::desc("num of iterations for heap allocations"),
