@@ -91,12 +91,6 @@ bool SymbolicEncapsulation::encapsulateImpl(llvm::Function &F,
   }
 
   auto &curM = *F.getParent();
-  auto *encapsulatedFunc = curM.getFunction(F.getName());
-  if (!encapsulatedFunc) {
-    llvm::report_fatal_error("Function: " + F.getName() +
-                             " was not found in module: " + curM.getName());
-  }
-
   auto &curCtx = curM.getContext();
 
   std::string harnessName = HarnessNamePrefix.str() + F.getName().str();
